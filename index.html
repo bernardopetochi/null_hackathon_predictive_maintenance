@@ -10,6 +10,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&display=swap" rel="stylesheet">
 <style>
+.vsband{display:flex;align-items:flex-end;gap:clamp(16px,3vw,44px);flex-wrap:wrap;padding:22px 0 6px}
+.vsband .vs-n{font:400 clamp(44px,6vw,92px)/.95 var(--sans);letter-spacing:-.05em;color:var(--ink)}
+.vsband .vs-n.hot{color:var(--hot)}
+.vsband .vs-n.dim{color:var(--faint)}
+.vsband .vs-l{font-size:14px;color:var(--muted);margin-top:8px}
+.vsband .vs-x{font:500 clamp(18px,1.8vw,24px)/1.2 var(--sans);color:var(--ink);padding-bottom:14px}
+.vsband .vs-src{flex-basis:100%;font-size:12.5px;color:var(--muted)}
+.vs-main{border-bottom:1px solid var(--rule);margin-bottom:8px}
 :root{
   --bg:#ffffff; --surface:#f2f3f5; --ink:#0b0d10; --text:#1f2329; --muted:#6a7079; --faint:#9ba1a9;
   --rule:#e4e6ea; --rule2:#cfd3d9; --band:#eceef1; --hot:#d92d20; --hot-bg:#fff4f3;
@@ -299,6 +307,7 @@ body.landing #frost{animation:breathe 5s ease-in-out infinite;transform-origin:5
       <div class="eyebrow">Predictive maintenance for lab freezers</div>
       <h1>Know days before a freezer fails.</h1>
       <div class="land-result" id="landResult">The model is training in your browser.</div>
+      <div class="vsband" aria-live="polite"><div><div class="vs-n hot" id="vsRL">–</div><div class="vs-l">Median warning before failure, Rime</div></div><div class="vs-x" id="vsXL">vs</div><div><div class="vs-n dim" id="vsCL">–</div><div class="vs-l">Median warning, standard −70 °C alarm</div></div><div class="vs-src">400 unseen simulated freezers, measured live in your browser. Not yet validated on real freezers.</div></div>
     </div>
     <div class="hero-foot">
       <p>Rime watches the cooling system of −80 °C freezers and flags faults before samples are at risk.</p>
@@ -321,6 +330,7 @@ body.landing #frost{animation:breathe 5s ease-in-out infinite;transform-origin:5
 </section>
 
 <main class="wrap">
+  <div class="vs-main"><div class="vsband" aria-live="polite"><div><div class="vs-n hot" id="vsRD">–</div><div class="vs-l">Median warning before failure, Rime</div></div><div class="vs-x" id="vsXD">vs</div><div><div class="vs-n dim" id="vsCD">–</div><div class="vs-l">Median warning, standard −70 °C alarm</div></div><div class="vs-src">400 unseen simulated freezers, measured live in your browser. Not yet validated on real freezers.</div></div></div>
   <section class="block" id="fleet-sec">
     <div class="kicker">Fleet</div>
     <h2>Your whole lab, at a glance.</h2>
@@ -704,6 +714,7 @@ function renderProof(r){PROOF=r;
   $('prooftxt').textContent='Simulated freezers. Measured live in your browser.';
   $('rulnote').textContent=`Predicted against true hours left. Typical error: ${Math.round(mae)} h.`;
   $('hcRime').textContent=fmtLead(med);$('landResult').textContent=`Tested on 400 unseen simulated freezers: Rime warned a median ${fmtLead(med)} before failure. The standard alarm, ${fmtLead(conv)}.`;$('hcConv').textContent=fmtLead(conv);$('headline-result').textContent=`${fails.length+r.healthy.length} test freezers, simulated`;
+  for(const k of ['L','D']){const a=$('vsR'+k),b=$('vsC'+k),x=$('vsX'+k);if(a){a.textContent=fmtLead(med);b.textContent=fmtLead(conv);x.textContent=conv>0?`${Math.round(med/conv)}× more warning`:'vs';}}
   renderCompare(med,conv);drawLead();drawRul();}
 function renderAxis(maxD){const step=maxD<=6?1:2;let s='';
   for(let d=0;d<=maxD;d+=step){s+=d?`<span style="left:${100*(1-d/maxD)}%">${d}</span>`:`<span class="end" style="left:100%">Failure</span>`;}
