@@ -3,6 +3,17 @@
 Data: `806278_temp.parquet` (1-min, 2013-01 → 2023-04) from the dataset of Huang et al., Scientific Data 2023 (not redistributed here). Fault label: refrigerant leakage at stage 1, service registered **2022-04-19** (labels are service dates and lag true onset).
 Sensor mapping (from the parquet column names): chamber = `RTD`, 1st-stage suction = `1st Suc.`, interstage HX = `H.E.`, evaporator outlet = `Evap. Out`, 2nd-stage sump = `2nd Sump`, compressor on-time from `State` bit 0.
 
+## Running tally: v4 model, unchanged, on real Revco freezers
+"Early" means the model alarmed before the chamber first went above −70 °C (a conventional alarm). Fault labels are service dates, which can lag the real failure by weeks.
+
+| Freezer | Label | Model alarm vs −70 °C alarm | Early warning? | Fault named | False alarms (fault-free 125-day stretches) | Note |
+|---|---|---|---|---|---|---|
+| 806278 | stage-1 leak, 2022-04-19 | ~18 days before | yes | correct | 6/26 | **in-sample** (v4 calibrated on it) |
+| 806274 | stage-1 leak, 2017-03-07 | 2 h after | no | correct | 9/27 | out-of-sample |
+<!-- TALLY-END -->
+
+**Out-of-sample so far: 0 of 1 leak freezers warned early.** Including in-sample: 1 of 2.
+
 ## What the real leak looked like (daily means)
 - ~18 Mar 2022: 2nd-stage sump dips from ~32 °C to ~30 °C.
 - 25 Mar → 15 Apr: 1st-stage suction climbs steadily from −31 °C to +11 °C while the chamber holds at −79.7 °C.
