@@ -13,7 +13,7 @@ Short desk research done during a hackathon. Research-firm market sizes vary a l
 ## Cost of failure (sourced, from `research/next-devices.md`)
 - **Vaccine storage:** a CDC study found 318 storage incidents in 8 weeks (Jul–Sep 2009) across 45 US immunisation programs, wasting USD 1.17 M of public vaccine. The authors extrapolate about USD 11.5 M/year for the US.
 - **Liquid-nitrogen cryo tanks (IVF):** in 2018 about 3,500 eggs/embryos were lost in San Francisco and more than 4,000 in Ohio (~950 patients). A jury awarded about USD 15 M, with the tank maker found 90% liable.
-- **ULT freezers:** project research cites a Boston University document saying a −80 °C freezer reaches about −60 °C roughly five hours after failure (not verified by us). In the Danish biobank data, a single 54-second door opening pushed the chamber to about −60 °C (Huang et al. 2023). One failure can affect years of irreplaceable samples. The financial value at risk per freezer is not quantified here.
+- **ULT freezers:** a −80 °C freezer can warm to −60 °C in about five hours after failure, and samples start to degrade at −60 °C ([Boston University, 2024](https://www.bu.edu/oehs/files/2024/10/Optimizing-Risk-Management-for-ULT-Freezers.pdf), citing NIH). In the Danish biobank data, a single 54-second door opening pushed the chamber to about −60 °C (Huang et al. 2023). One failure can affect years of irreplaceable samples. The financial value at risk per freezer is not quantified here.
 
 ## Team's own bottom-up estimate (illustrative, every input is an assumption)
 
@@ -21,7 +21,7 @@ Business model: license the prediction model as a software layer to independent 
 
 | Input | Value used | Status |
 |---|---|---|
-| ULT freezers installed worldwide (N) | 500,000 – 1,000,000 | **Assumption, no source found.** Needs checking: freezer sales (~USD 0.8 B/yr) ÷ an assumed ~USD 10–15 k unit price gives roughly 55–80 k new units/yr. With a 10–15-year life (figure from a Boston University risk document cited in project research, not verified by us), that is roughly 0.5–1.2 M installed. |
+| ULT freezers installed worldwide (N) | 500,000 – 1,000,000 | **Assumption, no source found.** Needs checking: freezer sales (~USD 0.8 B/yr) ÷ an assumed ~USD 10–15 k unit price gives roughly 55–80 k new units/yr. With a 10–15-year life ([Boston University, 2024](https://www.bu.edu/oehs/files/2024/10/Optimizing-Risk-Management-for-ULT-Freezers.pdf)), that is roughly 0.5–1.2 M installed. |
 | Share that is already networked / monitored (m) | 30% – 50% | Assumption |
 | Price per freezer per year (p) | USD 100 – 300 | Assumption (software add-on, below the cost of one service visit) |
 

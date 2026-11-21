@@ -10,6 +10,26 @@ NullHacks Helsinki, 21 Nov 2026. Theme: simulate data for physical AI.
 - **Market notes:** [`MARKET.md`](MARKET.md) · **Competitors:** [`research/competitors.md`](research/competitors.md) · **Next devices:** [`research/next-devices.md`](research/next-devices.md)
 - **Dataset:** [`data/`](data/) (300 simulated freezers, hourly, ground-truth labels)
 
+## Why this matters
+
+**The problem.** A −80 °C freezer that stops cooling gives a lab only hours to move samples.
+- *"The average new ULT freezer (−80C) can warm to −60C in only five hours"* (BU citing NIH), and *"At −60C samples start to degrade."* ([Boston University, Optimizing Risk Management for ULT Freezers, 2024](https://www.bu.edu/oehs/files/2024/10/Optimizing-Risk-Management-for-ULT-Freezers.pdf))
+- Fleets are old. Freezers *"have a predictable life expectancy of 10-15 years"*, and failure rates *"increase exponentially due to 'wearout'"*. At BU, 22% of ~550 freezers are 10–15 years old and 15% are 15 or older (same BU document). Older units *"routinely experience unexpected upper- and lower-compressor failures"* costing $6,800–7,300 to repair ([BU Research, Oct 2024](https://www.bu.edu/research/2024/10/29/do-you-need-to-upgrade-your-ult-freezer-let-ehs-know)).
+- Insurance does not cover it. At BU, *"Changes in temperature and the impact in changes to humidity are EXCLUDED"*, and *"Insurance is a financial remedy only"*: it cannot replace irreplicable research (BU document above). The University of Glasgow has *"only very limited cover for ... refrigerator/freezer breakdown"* of research samples ([Glasgow insurance page](https://www.gla.ac.uk/myglasgow/insurance/insurance/samplesinrefrigeratorsfreezers/)).
+- The same failure mode costs money elsewhere: a CDC study counted 318 vaccine-storage incidents in 8 weeks across 45 US programs, wasting USD 1.17 M ([CDC poster, 2010](https://cdc.confex.com/recording/cdc/nic2010/pdf/free/4db77adf5df9fff0d3caf5cafe28f496/paper22506_1.pdf)).
+
+**What exists today** (vendor pages linked in [`research/competitors.md`](research/competitors.md)):
+- Threshold alarms on chamber temperature, door and power, from independent monitors (XiltriX, Monnit, ELPRO, Elemental Machines, Eppendorf VisioNize). They fire once the chamber is already warming. None publishes a failure-prediction model, lead time or accuracy.
+- Real prediction exists only from makers on their own freezers: Stirling Ultracold VAULT100 (onboard analytics, Stirling engine only) and Thermo Fisher TSX connected services (human experts reviewing data, TSX only). Labs run mixed, ageing fleets. NIH says it is *"currently researching"* predictive monitoring ([NIH NEMS](https://nems.nih.gov/sustain/Pages/ULT-Freezer-Predictive-Monitoring.aspx)).
+
+**What we add.**
+- A brand-agnostic model that reads the refrigeration loop sensors against each freezer's own baseline, names the fault, and estimates days ahead, with stated accuracy.
+- It is trained on simulated failures because real labelled failures are rare. The only open labelled ULT dataset has 53 freezers and 42 labelled fault events ([Huang et al., *Scientific Data* 2023](https://doi.org/10.1038/s41597-023-02808-6)). A 2026 review of 86 papers finds hybrid physics-informed synthetic data most valued, and names validation against real data as the key gap ([Nieminen et al., *J. Intelligent Manufacturing* 2026](https://doi.org/10.1007/s10845-026-02795-6)).
+- We did that validation:
+  - **Simulated freezers (5 seeds):** 100% of failures caught, median 8.1–8.8 days warning, compared with 1.0–1.2 days for a −70 °C alarm.
+  - **Real biobank freezer 806278, refrigerant leak:** the first simulator-trained model **missed**. It alarmed 1.7 days before service, after a −70 °C alarm would have, because the real leak looked nothing like our guess. After recalibrating the leak shape and noise on that freezer, it warned **20.8 days** before service, about 18 days before the −70 °C alarm, with the fault named correctly. False alarms on fault-free stretches fell from 12/26 to 6/26.
+  - This is in-sample on one freezer, and the false alarm rate is still too high. The next step is out-of-sample freezers from the same dataset. Details: [`analysis/REAL_BACKTEST.md`](analysis/REAL_BACKTEST.md).
+
 ### Repo map
 | Path | What |
 |---|---|
