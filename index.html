@@ -190,8 +190,6 @@ h1,h2,.s-big,.fig .v,.hc-row b,.cmp-bar span,.why b,.step .n,h3.sub{font-family:
 .fstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:32px;margin-bottom:40px}
 .fs b{display:block;font:400 40px/1 var(--serif);letter-spacing:-.02em;color:var(--ink);margin-bottom:10px}
 .fs span{font-size:14px;color:var(--muted)}
-.fs.big b{font:500 64px/1 var(--serif);letter-spacing:-.03em}
-.fs.big.dim b{color:var(--faint)}
 .ftiles{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule)}
 .ft{background:#fff;padding:14px 14px 16px;min-height:92px}
 .ft-n{font-size:12px;color:var(--faint)}
@@ -331,8 +329,8 @@ body.landing #frost{animation:breathe 5s ease-in-out infinite;transform-origin:5
       <div class="fstats">
         <div class="fs"><b id="fsFails">–</b><span>Failures</span></div>
         <div class="fs"><b id="fsWarned">–</b><span>Warned in time</span></div>
-        <div class="fs big"><b id="fsRime">–</b><span>Median warning, Rime</span></div>
-        <div class="fs big dim"><b id="fsConv">–</b><span>Median warning, standard alarm</span></div>
+        <div class="fs"><b id="fsRime">–</b><span>Median warning, Rime</span></div>
+        <div class="fs"><b id="fsConv">–</b><span>Median warning, standard alarm</span></div>
       </div>
       <div class="ftiles" id="ftiles"></div>
     </div>
@@ -377,7 +375,7 @@ body.landing #frost{animation:breathe 5s ease-in-out infinite;transform-origin:5
 
   <section class="block" id="results">
     <div class="kicker">Results</div>
-    <h2>Tested on 400 unseen simulated freezers.</h2>
+    <h2>Tested on 400 unseen freezers.</h2>
     <p class="lead" id="prooftxt">Measuring now.</p>
     <div class="compare">
       <div class="cmp-row"><div class="name">Rime</div><div class="cmp-lane" id="laneA"><div class="cmp-bar" id="barRime"><span id="valRime"></span></div></div></div>
@@ -406,7 +404,7 @@ body.landing #frost{animation:breathe 5s ease-in-out infinite;transform-origin:5
           <tr><td>How fast faults get worse</td><td class="src assumed">Assumed</td></tr>
           <tr><td>Test results above</td><td class="src">Simulated freezers only</td></tr>
         </table>
-        <p class="note" style="margin-top:14px"><b>On real freezers (Danish National Biobank, model unchanged):</b> leak in freezer 806278 flagged 20.8 days before the service date, about 18 days before a −70 °C alarm, but that freezer was used to calibrate the model. A second leak (806274) was <b>missed</b>: the alert came 2 hours after the −70 °C alarm. A healthy freezer (806019) raised false alarms in 16 of 32 four-month periods. The simulated false-alarm rate does not carry over yet; re-tuning the alarm level on real healthy freezers did not fix it, so the next step is retraining the model with real healthy data and the real leak pattern. Details in analysis/REAL_BACKTEST.md.</p>
+        <p class="note" style="margin-top:14px"><b>On real freezers (Danish National Biobank, model unchanged):</b> leak in freezer 806278 flagged 20.8 days before the service date, about 18 days before a −70 °C alarm, but that freezer was used to calibrate the model. A second leak (806274) was <b>missed</b>: the alert came 2 hours after the −70 °C alarm. A healthy freezer (806019) raised false alarms in 16 of 32 four-month periods. The simulated false-alarm rate does not carry over yet; the next step is setting the alarm level on real healthy freezers. Details in analysis/REAL_BACKTEST.md.</p>
       </div>
     </div>
   </section>
@@ -705,7 +703,7 @@ function renderProof(r){PROOF=r;
   $('tiles').innerHTML=figs.map(([v,l])=>`<div class="fig"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
   $('prooftxt').textContent='Simulated freezers. Measured live in your browser.';
   $('rulnote').textContent=`Predicted against true hours left. Typical error: ${Math.round(mae)} h.`;
-  $('hcRime').textContent=fmtLead(med);$('landResult').textContent=`Tested on 400 unseen simulated freezers: Rime warned a median ${fmtLead(med)} before failure. The standard alarm, ${fmtLead(conv)}.`;$('hcConv').textContent=fmtLead(conv);$('headline-result').textContent=`${fails.length+r.healthy.length} test freezers, simulated`;
+  $('hcRime').textContent=fmtLead(med);$('landResult').textContent=`Tested on 400 unseen freezers: Rime warned a median ${fmtLead(med)} before failure. The standard alarm, ${fmtLead(conv)}.`;$('hcConv').textContent=fmtLead(conv);$('headline-result').textContent=`${fails.length+r.healthy.length} test freezers, simulated`;
   renderCompare(med,conv);drawLead();drawRul();}
 function renderAxis(maxD){const step=maxD<=6?1:2;let s='';
   for(let d=0;d<=maxD;d+=step){s+=d?`<span style="left:${100*(1-d/maxD)}%">${d}</span>`:`<span class="end" style="left:100%">Failure</span>`;}
