@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Espresso Wear Lab</title>
+<style>
+:root{
+  --bg:#0e1116; --panel:#161b22; --panel2:#1c232c; --line:#2a333e; --text:#e6edf3; --muted:#8b97a5;
+  --ok:#3fb950; --warn:#d29922; --bad:#f85149; --accent:#58a6ff;
+  --c-scale:#58a6ff; --c-gasket:#d29922; --c-pump:#f778ba; --c-burrs:#a5d6a7; --c-healthy:#8b97a5;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+header{padding:14px 20px;border-bottom:1px solid var(--line);display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+header h1{font-size:18px;margin:0}
+header .sub{color:var(--muted);font-size:13px}
+#trainbar{margin-left:auto;font-size:13px;color:var(--muted);display:flex;align-items:center;gap:10px}
+#trainprog{width:160px;height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+#trainprog div{height:100%;width:0;background:var(--accent);transition:width .2s}
+main{padding:16px 20px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px}
+@media (max-width:980px){main{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+.panel h2{font-size:14px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+button{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:7px 11px;font:inherit;cursor:pointer}
+button:hover:not(:disabled){border-color:var(--accent)}
+button:disabled{opacity:.4;cursor:default}
+button.primary{background:var(--accent);color:#0b1220;border-color:var(--accent);font-weight:600}
+button.fault{border-left:4px solid var(--fc)}
+.sep{width:1px;height:26px;background:var(--line);margin:0 4px}
+label.speed{display:flex;align-items:center;gap:8px;color:var(--muted)}
+#charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+.chart{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.chart .t{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.chart .t b{color:var(--text);font-weight:600}
+.chart canvas{width:100%;height:110px;display:block}
+#status{border-radius:9px;padding:14px;margin-bottom:12px;border:1px solid var(--line)}
+#status .big{font-size:20px;font-weight:700}
+#status .small{color:var(--muted);font-size:13px;margin-top:4px}
+#status.ok{background:rgba(63,185,80,.1);border-color:rgba(63,185,80,.5)}
+#status.warn{background:rgba(210,153,34,.12);border-color:rgba(210,153,34,.6)}
+#status.bad{background:rgba(248,81,73,.14);border-color:rgba(248,81,73,.7)}
+.prob{display:grid;grid-template-columns:130px 1fr 42px;gap:8px;align-items:center;font-size:13px;margin:5px 0}
+.prob .bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+.prob .bar div{height:100%}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:13px}
+.kv span:nth-child(odd){color:var(--muted)}
+#log{max-height:180px;overflow:auto;font-size:12px;color:var(--muted);font-family:ui-monospace,Menlo,Consolas,monospace}
+#log div{padding:2px 0;border-bottom:1px dashed var(--line)}
+.full{grid-column:1/-1}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.tile{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.tile .v{font-size:24px;font-weight:700}
+.tile .l{font-size:12px;color:var(--muted)}
+.proofgrid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:12px}
+@media (max-width:980px){.proofgrid{grid-template-columns:1fr}}
+.proofgrid canvas{width:100%;height:280px;display:block;background:var(--panel2);border:1px solid var(--line);border-radius:8px}
+.note{color:var(--muted);font-size:12px;margin-top:6px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+td,th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:600}
+.tag{display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:600}
+.tag.inv{background:rgba(248,81,73,.18);color:#ff9b95}
+.tag.conv{background:rgba(63,185,80,.18);color:#8ee59b}
+.toggle{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:13px;margin:8px 0}
+.hidden{filter:blur(6px);user-select:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>☕ Espresso Wear Lab</h1>
+  <span class="sub">Simulated machine wear → fault model trained on a simulated fleet → early warnings</span>
+  <div id="trainbar"><span id="trainmsg">Simulating training fleet…</span><div id="trainprog"><div></div></div></div>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>Live machine</h2>
+    <div class="controls">
+      <button id="play" class="primary">▶ Play</button>
+      <label class="speed">Speed <input id="speed" type="range" min="0" max="100" value="55"> <span id="speedv"></span></label>
+      <span class="sep"></span>
+      <span style="color:var(--muted)">Inject:</span>
+      <button class="fault" data-f="scale" style="--fc:var(--c-scale)">Scale</button>
+      <button class="fault" data-f="gasket" style="--fc:var(--c-gasket)">Gasket</button>
+      <button class="fault" data-f="pump" style="--fc:var(--c-pump)">Pump</button>
+      <button class="fault" data-f="burrs" style="--fc:var(--c-burrs)">Burrs</button>
+      <button id="blind" title="Inject a random fault and hide which one">🎲 Mystery fault</button>
+      <span class="sep"></span>
+      <button id="repair">🔧 Repair</button>
+      <button id="newm">New machine</button>
+    </div>
+    <div id="charts"></div>
+    <div class="note">Grey band = this machine's own healthy baseline (mean ± 2σ over its first 40 shots). Each point is one shot.</div>
+  </section>
+
+  <aside class="panel">
+    <h2>Model verdict</h2>
+    <div id="status" class="ok"><div class="big">Model training…</div><div class="small">&nbsp;</div></div>
+    <div id="probs"></div>
+    <h2 style="margin-top:14px">Ground truth (simulator)</h2>
+    <label class="toggle"><input type="checkbox" id="showtruth" checked> show hidden state</label>
+    <div class="kv" id="truth"></div>
+    <h2 style="margin-top:14px">Event log</h2>
+    <div id="log"></div>
+  </aside>
+
+  <section class="panel full">
+    <h2>Proof: does it work on machines it has never seen?</h2>
+    <div id="prooftxt" class="note">Waiting for training…</div>
+    <div class="tiles" id="tiles"></div>
+    <div class="proofgrid">
+      <div>
+        <canvas id="leadchart"></canvas>
+        <div class="note">Each dot = one unseen test machine that later failed. X = how many shots before failure the alarm fired. Filled = fault type identified correctly, hollow = wrong type. Dots at the left edge = missed (no alarm before failure).</div>
+      </div>
+      <div>
+        <canvas id="rulchart"></canvas>
+        <div class="note">Predicted vs true shots-to-failure on unseen machines (fault active, ≤ 600 shots left). Diagonal = perfect.</div>
+      </div>
+    </div>
+    <div class="controls" style="margin-top:12px">
+      <button id="csv">⬇ Download simulated dataset (CSV, 60 machines)</button>
+      <span class="note" style="margin:0">Per-shot sensor readings with ground-truth fault labels, severity and shots-to-failure.</span>
+    </div>
+  </section>
+
+  <section class="panel full">
+    <h2>What is real and what is invented</h2>
+    <table>
+      <tr><th>Item</th><th>Status</th><th>Detail</th></tr>
+      <tr><td>~9 bar pressure, ~90–96 °C brew water, ~25–30 s shot</td><td><span class="tag conv">convention</span></td><td>Commonly cited espresso brewing targets. Used only as healthy baselines; not measured on a real machine here.</td></tr>
+      <tr><td>Fault signatures (which signal moves, direction, size)</td><td><span class="tag inv">invented</span></td><td>Plausible-sounding but unvalidated physics, written by us: scale slows heat recovery and drops temp; gasket wear drops pressure and shortens shots; failing pump raises vibration and pressure noise; dull burrs shorten and destabilise shot time. Magnitudes are guesses.</td></tr>
+      <tr><td>Fault lifetimes and wear curves</td><td><span class="tag inv">invented</span></td><td>Scale 1500–3000 shots, gasket 800–1600, pump 600–1200, burrs 1000–2000; severity = (elapsed/life)^k. Not from failure statistics.</td></tr>
+      <tr><td>Sensor noise, machine-to-machine variation</td><td><span class="tag inv">invented</span></td><td>Gaussian noise, slow random drift, plus non-fault nuisances the model must ignore: barista grind tweaks (shift shot time), a daily room-temperature cycle, and occasional sensor glitch spikes.</td></tr>
+      <tr><td>100 shots/day</td><td><span class="tag inv">invented</span></td><td>Assumed busy-café volume, only used to convert shots to days.</td></tr>
+      <tr><td>The model and the evaluation</td><td><span class="tag conv">real</span></td><td>A neural net (15→32→5) and an RUL regressor are actually trained in your browser on the simulated fleet and scored on separately simulated machines. Numbers above are measured, but only on our simulator, so they say nothing yet about real machines.</td></tr>
+    </table>
+    <div class="note">Limitations: one fault at a time; the model knows only the four fault types it was trained on; healthy baseline assumes the first 40 shots are fault-free.</div>
+  </section>
+</main>
+
+<script>
+"use strict";
+// ---------------- RNG ----------------
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function makeRng(seed){const u=mulberry32(seed);let spare=null;
+  const r=()=>u(); r.gauss=()=>{if(spare!==null){const s=spare;spare=null;return s}
+    let a,b,s;do{a=u()*2-1;b=u()*2-1;s=a*a+b*b}while(s>=1||s===0);const m=Math.sqrt(-2*Math.log(s)/s);spare=b*m;return a*m};
+  r.range=(lo,hi)=>lo+u()*(hi-lo); return r;}
+
+// ---------------- Simulator ----------------
+const SIG=[
+  {k:'pressure',name:'Pump pressure',unit:'bar',d:2},
+  {k:'temp',name:'Boiler temp',unit:'°C',d:1},
+  {k:'shot',name:'Shot time',unit:'s',d:1},
+  {k:'vib',name:'Vibration RMS',unit:'mm/s',d:2},
+  {k:'recov',name:'Heat recovery',unit:'s',d:1},
+];
+const FAULTS={ // ALL NUMBERS INVENTED (see table on page)
+  scale:{label:'Scale buildup',action:'Descale',life:[1500,3000],k:1.3,color:'--c-scale'},
+  gasket:{label:'Worn group gasket',action:'Replace group gasket',life:[800,1600],k:1.6,color:'--c-gasket'},
+  pump:{label:'Failing pump',action:'Replace pump',life:[600,1200],k:2.2,color:'--c-pump'},
+  burrs:{label:'Dull grinder burrs',action:'Replace grinder burrs',life:[1000,2000],k:1.0,color:'--c-burrs'},
+};
+const CLASSES=['healthy','scale','gasket','pump','burrs'];
+const SHOTS_PER_DAY=100; // invented
+const BASE_N=40, WIN=30, H=300; // baseline shots, feature window, warning horizon (shots)
+
+function newMachine(seed){
+  const rng=makeRng(seed);
+  return {rng,t:0,fault:null,broken:false,
+    base:{pressure:9+0.15*rng.gauss(),temp:93+0.4*rng.gauss(),shot:27+1.5*rng.gauss(),vib:1.0+0.1*rng.gauss(),recov:18+1.5*rng.gauss()},
+    noise:{pressure:0.08,temp:0.25,shot:0.8,vib:0.08,recov:0.8},
+    drift:{pressure:0,temp:0,shot:0,vib:0,recov:0},
+    hist:{pressure:[],temp:[],shot:[],vib:[],recov:[]}, bl:null, grind:0, phase:rng()*6.283};
+}
+function injectFault(m,type,onsetDelay=0){
+  const f=FAULTS[type];m.fault={type,onset:m.t+onsetDelay,life:Math.round(m.rng.range(f.life[0],f.life[1])),k:f.k};
+}
+function severity(m){if(!m.fault)return 0;const x=(m.t-m.fault.onset)/m.fault.life;return x<=0?0:Math.min(1,Math.pow(x,m.fault.k));}
+function failShot(m){return m.fault?m.fault.onset+m.fault.life:Infinity;}
+function stepMachine(m){
+  m.t++;const r=m.rng,s=severity(m),ty=m.fault&&m.fault.type;
+  const eff={pressure:0,temp:0,shot:0,vib:0,recov:0},nm={pressure:1,temp:1,shot:1,vib:1,recov:1};
+  if(ty==='scale'){eff.temp=-1.2*s;eff.recov=10*s;eff.shot=1.5*s;eff.pressure=0.2*s;nm.temp=1+1.0*s;}
+  if(ty==='gasket'){eff.pressure=-0.9*s;eff.shot=-2.5*s;eff.temp=-0.5*s;nm.pressure=1+2*s;}
+  if(ty==='pump'){eff.pressure=-1.2*s;eff.vib=1.2*s;nm.pressure=1+1.5*s;nm.vib=1+1*s;}
+  if(ty==='burrs'){eff.shot=-4*s;eff.vib=0.3*s;eff.pressure=-0.25*s;nm.shot=1+1.5*s;}
+  // Nuisances that are NOT faults (also invented): barista grind tweaks, daily room-temperature cycle, sensor glitches
+  if(r()<1/150)m.grind+=2.0*r.gauss();
+  m.grind*=0.997; // barista drifts back toward target over time
+  eff.shot+=m.grind;
+  eff.temp+=0.4*Math.sin(2*Math.PI*m.t/SHOTS_PER_DAY+m.phase);
+  const out={};
+  for(const {k} of SIG){
+    m.drift[k]=0.995*m.drift[k]+0.04*m.noise[k]*r.gauss(); // slow wandering, mean-reverting
+    out[k]=m.base[k]+m.drift[k]+eff[k]+m.noise[k]*nm[k]*r.gauss();
+    if(r()<0.004)out[k]+=(r()<0.5?-1:1)*6*m.noise[k]; // sensor glitch
+    m.hist[k].push(out[k]);
+  }
+  if(m.t===BASE_N)computeBaseline(m);
+  if(s>=1)m.broken=true;
+  return out;
+}
+function computeBaseline(m){m.bl={};for(const {k} of SIG){const a=m.hist[k].slice(0,BASE_N);const mu=a.reduce((x,y)=>x+y,0)/a.length;
+  const sd=Math.sqrt(a.reduce((x,y)=>x+(y-mu)**2,0)/(a.length-1));m.bl[k]={mu,sd:Math.max(sd,m.noise[k]*0.5)};}}
+
+// Features: for each signal, deviation of last-10 mean, 30-shot slope, last-10 std ratio, all vs own baseline
+const NF=SIG.length*3;
+const sl=x=>Math.sign(x)*Math.log1p(Math.abs(x));
+function features(m){
+  if(!m.bl||m.t<BASE_N+WIN)return null;const f=new Float64Array(NF);let i=0;
+  for(const {k} of SIG){const h=m.hist[k],n=h.length,{mu,sd}=m.bl[k];
+    let s10=0;for(let j=n-10;j<n;j++)s10+=h[j];const m10=s10/10;
+    let v10=0;for(let j=n-10;j<n;j++)v10+=(h[j]-m10)**2;const sd10=Math.sqrt(v10/9);
+    let sx=0,sy=0,sxy=0,sxx=0;for(let j=0;j<WIN;j++){const y=h[n-WIN+j];sx+=j;sy+=y;sxy+=j*y;sxx+=j*j;}
+    const slope=(WIN*sxy-sx*sy)/(WIN*sxx-sx*sx);
+    f[i++]=sl((m10-mu)/sd);f[i++]=sl(slope*WIN/sd);f[i++]=sl(sd10/sd-1);}
+  return f;
+}
+
+// ---------------- Tiny MLP (Adam) ----------------
+function MLP(nin,nh,nout,seed){const r=makeRng(seed);const g=(n,s)=>Float64Array.from({length:n},()=>r.gauss()*s);
+  this.nin=nin;this.nh=nh;this.nout=nout;this.W1=g(nin*nh,Math.sqrt(1/nin));this.b1=new Float64Array(nh);this.W2=g(nh*nout,Math.sqrt(1/nh));this.b2=new Float64Array(nout);
+  this.p=[this.W1,this.b1,this.W2,this.b2];this.m=this.p.map(a=>new Float64Array(a.length));this.v=this.p.map(a=>new Float64Array(a.length));this.tstep=0;}
+MLP.prototype.forward=function(x){const h=new Float64Array(this.nh),o=new Float64Array(this.nout);
+  for(let j=0;j<this.nh;j++){let s=this.b1[j];for(let i=0;i<this.nin;i++)s+=x[i]*this.W1[i*this.nh+j];h[j]=Math.tanh(s);}
+  for(let k=0;k<this.nout;k++){let s=this.b2[k];for(let j=0;j<this.nh;j++)s+=h[j]*this.W2[j*this.nout+k];o[k]=s;}return {h,o};};
+function softmax(o){const mx=Math.max(...o);const e=Array.from(o,v=>Math.exp(v-mx));const s=e.reduce((a,b)=>a+b,0);return e.map(v=>v/s);}
+MLP.prototype.trainBatch=function(X,Y,idx,mode,lr){ // mode 'cls' (Y int) or 'reg' (Y float)
+  const grads=this.p.map(a=>new Float64Array(a.length));const [gW1,gb1,gW2,gb2]=grads;let loss=0;
+  for(const n of idx){const x=X[n];const {h,o}=this.forward(x);let d;
+    if(mode==='cls'){const p=softmax(o);loss+=-Math.log(p[Y[n]]+1e-12);d=p;d[Y[n]]-=1;}
+    else{const e=o[0]-Y[n];loss+=e*e;d=[2*e];}
+    const dh=new Float64Array(this.nh);
+    for(let j=0;j<this.nh;j++){for(let k=0;k<this.nout;k++){gW2[j*this.nout+k]+=h[j]*d[k];dh[j]+=this.W2[j*this.nout+k]*d[k];}dh[j]*=1-h[j]*h[j];}
+    for(let k=0;k<this.nout;k++)gb2[k]+=d[k];
+    for(let i=0;i<this.nin;i++)for(let j=0;j<this.nh;j++)gW1[i*this.nh+j]+=x[i]*dh[j];
+    for(let j=0;j<this.nh;j++)gb1[j]+=dh[j];}
+  this.tstep++;const b1=0.9,b2=0.999,B=idx.length;
+  for(let q=0;q<4;q++){const P=this.p[q],G=grads[q],M=this.m[q],V=this.v[q];
+    for(let i=0;i<P.length;i++){const gi=G[i]/B;M[i]=b1*M[i]+(1-b1)*gi;V[i]=b2*V[i]+(1-b2)*gi*gi;
+      P[i]-=lr*(M[i]/(1-b1**this.tstep))/(Math.sqrt(V[i]/(1-b2**this.tstep))+1e-8);}}
+  return loss/B;};
+
+// ---------------- Fleet simulation, training, evaluation ----------------
+const MODEL={cls:null,rul:null,mu:null,sd:null,ready:false};
+function normalize(f){const x=new Float64Array(NF);for(let i=0;i<NF;i++)x[i]=(f[i]-MODEL.mu[i])/MODEL.sd[i];return x;}
+function predict(f){const x=normalize(f);const p=softmax(MODEL.cls.forward(x).o);const r=Math.max(0,Math.expm1(MODEL.rul.forward(x).o[0]));return {p,rul:r};}
+
+function fleetMachine(seed,i){ // returns machine with a fault (80%) or healthy
+  const m=newMachine(seed);const r=m.rng;const types=Object.keys(FAULTS);
+  if(r()<0.8)injectFault(m,types[Math.floor(r()*4)],Math.round(r.range(60,900)));
+  m.horizon=m.fault?failShot(m):2500;return m;}
+
+const sleep0=()=>new Promise(r=>setTimeout(r,0));
+function setProg(frac,msg){document.querySelector('#trainprog div').style.width=(frac*100)+'%';if(msg)document.getElementById('trainmsg').textContent=msg;}
+
+async function trainAll(){
+  const t0=performance.now();
+  // 1) simulate training fleet
+  const NTRAIN=300;const Xc=[],Yc=[],Xr=[],Yr=[];let healthyBank=[];
+  for(let i=0;i<NTRAIN;i++){const m=fleetMachine(1000+i);
+    while(m.t<m.horizon&&!m.broken){stepMachine(m);
+      if(m.t%8===0){const f=features(m);if(!f)continue;const rul=failShot(m)-m.t;
+        const lab=(m.fault&&rul<=H&&m.t>=m.fault.onset)?CLASSES.indexOf(m.fault.type):0;
+        if(lab===0)healthyBank.push(f);else{Xc.push(f);Yc.push(lab);}
+        if(m.fault&&m.t>=m.fault.onset&&rul<=600){Xr.push(f);Yr.push(Math.log1p(rul));}}}
+    if(i%20===0){setProg(0.3*i/NTRAIN,`Simulating training fleet: machine ${i}/${NTRAIN}`);await sleep0();}}
+  // balance: keep about as many healthy samples as fault samples
+  const hr=makeRng(7);healthyBank.sort(()=>hr()-0.5);healthyBank=healthyBank.slice(0,Math.round(Xc.length*1.2));
+  for(const f of healthyBank){Xc.push(f);Yc.push(0);}
+  // normalization
+  MODEL.mu=new Float64Array(NF);MODEL.sd=new Float64Array(NF);
+  for(const f of Xc)for(let i=0;i<NF;i++)MODEL.mu[i]+=f[i]/Xc.length;
+  for(const f of Xc)for(let i=0;i<NF;i++)MODEL.sd[i]+=(f[i]-MODEL.mu[i])**2/Xc.length;
+  for(let i=0;i<NF;i++)MODEL.sd[i]=Math.sqrt(MODEL.sd[i])||1;
+  const XcN=Xc.map(normalize),XrN=Xr.map(normalize);
+  MODEL.cls=new MLP(NF,32,5,11);MODEL.rul=new MLP(NF,32,1,12);
+  const EPOCHS=10,BS=64,sr=makeRng(99);const order=n=>{const a=[...Array(n).keys()];for(let i=n-1;i>0;i--){const j=Math.floor(sr()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+  let lc=0,lr=0;
+  for(let ep=0;ep<EPOCHS;ep++){
+    const oc=order(XcN.length);lc=0;let nb=0;
+    for(let b=0;b<oc.length;b+=BS){lc+=MODEL.cls.trainBatch(XcN,Yc,oc.slice(b,b+BS),'cls',0.003);nb++;}lc/=nb;
+    const orr=order(XrN.length);lr=0;nb=0;
+    for(let b=0;b<orr.length;b+=BS){lr+=MODEL.rul.trainBatch(XrN,Yr,orr.slice(b,b+BS),'reg',0.003);nb++;}lr/=nb;
+    setProg(0.3+0.5*(ep+1)/EPOCHS,`Training on ${Xc.length.toLocaleString()} windows · epoch ${ep+1}/${EPOCHS} · loss ${lc.toFixed(3)}`);await sleep0();}
+  MODEL.ready=true;MODEL.nTrainMachines=NTRAIN;MODEL.nWindows=Xc.length;
+  // 2) evaluate on unseen machines (different seeds)
+  const res=await evaluate();
+  setProg(1,`Trained on ${NTRAIN} simulated machines (${Xc.length.toLocaleString()} windows) in ${((performance.now()-t0)/1000).toFixed(1)} s`);
+  return res;
+}
+
+// alarm rule shared by eval and live demo: p(healthy)<0.5 on 3 consecutive checks (every 5 shots)
+const CHECK_EVERY=5,CONSEC=3;
+async function evaluate(){
+  const NTEST=150;const out={fail:[],healthy:[],rul:[],falseAlarms:0,healthyShots:0};
+  for(let i=0;i<NTEST;i++){const m=fleetMachine(900000+i);let streak=0,alarm=null,votes=new Float64Array(5);
+    while(m.t<m.horizon&&!m.broken){stepMachine(m);
+      if(m.t%CHECK_EVERY)continue;const f=features(m);if(!f)continue;const pr=predict(f);
+      if(pr.p[0]<0.5){streak++;for(let k=1;k<5;k++)votes[k]+=pr.p[k];}else{streak=0;votes.fill(0);}
+      const rul=failShot(m)-m.t;
+      if(m.fault&&m.t>=m.fault.onset&&rul<=600&&out.rul.length<4000&&(m.t%15===0))out.rul.push([rul,pr.rul,m.fault.type]);
+      if(streak>=CONSEC&&!alarm){let best=1;for(let k=2;k<5;k++)if(votes[k]>votes[best])best=k;alarm={t:m.t,cls:CLASSES[best],rulPred:pr.rul};
+        if(!m.fault||m.t<m.fault.onset){out.falseAlarms++;}
+        if(!m.fault)break;}}
+    if(!m.fault){out.healthy.push({alarm:!!alarm});out.healthyShots+=m.t;}
+    else{const early=alarm&&alarm.t<m.fault.onset;
+      out.fail.push({type:m.fault.type,lead:alarm&&!early?failShot(m)-alarm.t:null,correct:alarm&&!early?alarm.cls===m.fault.type:false,falseEarly:!!early});}
+    if(i%10===0){setProg(0.8+0.2*i/NTEST,`Testing on unseen machines: ${i}/${NTEST}`);await sleep0();}}
+  return out;
+}
+
+// ---------------- Proof rendering ----------------
+function cssv(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+function setupCanvas(c){const dpr=window.devicePixelRatio||1;const w=c.clientWidth,h=c.clientHeight;if(c.width!==w*dpr||c.height!==h*dpr){c.width=w*dpr;c.height=h*dpr;}
+  const ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);return {ctx,w,h};}
+let PROOF=null;
+function renderProof(r){PROOF=r;
+  const fails=r.fail,det=fails.filter(f=>f.lead!==null),corr=det.filter(f=>f.correct);
+  const leads=det.map(f=>f.lead).sort((a,b)=>a-b);const med=leads.length?leads[Math.floor(leads.length/2)]:0;
+  const hAl=r.healthy.filter(h=>h.alarm).length;
+  const rulErr=r.rul.filter(([t])=>t<=300).map(([t,p])=>Math.abs(p-t));rulErr.sort((a,b)=>a-b);const mae=rulErr.length?rulErr[Math.floor(rulErr.length/2)]:0;
+  const tiles=[
+    [`${Math.round(100*det.length/fails.length)}%`,`failures caught before breakdown (${det.length}/${fails.length})`],
+    [`${Math.round(100*det.filter(f=>f.lead>=SHOTS_PER_DAY).length/fails.length)}%`,`caught at least ${SHOTS_PER_DAY} shots (≈1 day) ahead`],
+    [`${det.length?Math.round(100*corr.length/det.length):0}%`,`of those: right fault named (${corr.length}/${det.length})`],
+    [`${med} shots`,`median warning lead ≈ ${(med/SHOTS_PER_DAY).toFixed(1)} days at ${SHOTS_PER_DAY}/day`],
+    [`${hAl}/${r.healthy.length}`,`healthy machines with a false alarm (over ${r.healthyShots.toLocaleString()} shots)`],
+    [`${fails.filter(f=>f.falseEarly).length}`,`faulty machines alarmed before the fault even started`],
+    [`±${Math.round(mae)} shots`,`median error of “shots left” estimate in the last 300 shots`],
+  ];
+  document.getElementById('tiles').innerHTML=tiles.map(([v,l])=>`<div class="tile"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+  document.getElementById('prooftxt').textContent=`Model trained on ${MODEL.nTrainMachines} simulated machines, tested on ${fails.length+r.healthy.length} different simulated machines it never saw (new random seeds: different baselines, noise, fault onset and lifetime). Measured, not hard-coded. Simulator only.`;
+  drawLead();drawRul();
+}
+function drawLead(){if(!PROOF)return;const {ctx,w,h}=setupCanvas(document.getElementById('leadchart'));
+  const types=Object.keys(FAULTS),L=120,R=16,T=18,B=34;const maxX=Math.max(800,...PROOF.fail.map(f=>f.lead||0));
+  const X=v=>L+(w-L-R)*v/maxX;ctx.font='12px system-ui';ctx.strokeStyle=cssv('--line');ctx.fillStyle=cssv('--muted');
+  for(let v=0;v<=maxX;v+=200){ctx.beginPath();ctx.moveTo(X(v),T);ctx.lineTo(X(v),h-B);ctx.stroke();ctx.textAlign='center';ctx.fillText(v,X(v),h-B+15);}
+  ctx.fillText('warning lead time (shots before failure) →',L+(w-L-R)/2,h-4);
+  const rowH=(h-T-B)/types.length;const jr=makeRng(5);
+  types.forEach((t,i)=>{const y0=T+rowH*i+rowH/2;const col=cssv(FAULTS[t].color);
+    ctx.fillStyle=cssv('--text');ctx.textAlign='right';ctx.fillText(FAULTS[t].label,L-8,y0+4);
+    const rows=PROOF.fail.filter(f=>f.type===t);
+    const det=rows.filter(f=>f.lead!==null);const corr=det.filter(f=>f.correct).length;
+    ctx.fillStyle=cssv('--muted');ctx.font='11px system-ui';ctx.fillText(`${det.length}/${rows.length} caught, ${corr} ID'd`,L-8,y0+18);ctx.font='12px system-ui';
+    for(const f of rows){const x=f.lead===null?L-2:X(f.lead);const y=y0+(jr()-0.5)*rowH*0.6;
+      ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);
+      if(f.lead===null){ctx.strokeStyle=cssv('--bad');ctx.lineWidth=1.5;ctx.moveTo(x-4,y-4);ctx.lineTo(x+4,y+4);ctx.moveTo(x+4,y-4);ctx.lineTo(x-4,y+4);ctx.stroke();}
+      else if(f.correct){ctx.fillStyle=col;ctx.fill();}else{ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.stroke();}}
+    ctx.lineWidth=1;ctx.strokeStyle=cssv('--line');});
+}
+function drawRul(){if(!PROOF)return;const {ctx,w,h}=setupCanvas(document.getElementById('rulchart'));const L=44,R=12,T=14,B=34,M=600;
+  const X=v=>L+(w-L-R)*v/M,Y=v=>h-B-(h-T-B)*Math.min(v,M)/M;ctx.font='12px system-ui';
+  ctx.strokeStyle=cssv('--line');ctx.fillStyle=cssv('--muted');
+  for(let v=0;v<=M;v+=150){ctx.beginPath();ctx.moveTo(X(v),T);ctx.lineTo(X(v),h-B);ctx.moveTo(L,Y(v));ctx.lineTo(w-R,Y(v));ctx.stroke();
+    ctx.textAlign='center';ctx.fillText(v,X(v),h-B+15);ctx.textAlign='right';ctx.fillText(v,L-5,Y(v)+4);}
+  ctx.textAlign='center';ctx.fillText('true shots to failure',L+(w-L-R)/2,h-4);
+  ctx.save();ctx.translate(11,T+(h-T-B)/2);ctx.rotate(-Math.PI/2);ctx.fillText('predicted',0,0);ctx.restore();
+  ctx.globalAlpha=0.55;for(const [t,p,ty] of PROOF.rul){ctx.fillStyle=cssv(FAULTS[ty].color);ctx.fillRect(X(t)-1.5,Y(p)-1.5,3,3);}ctx.globalAlpha=1;
+  ctx.strokeStyle=cssv('--text');ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(X(0),Y(0));ctx.lineTo(X(M),Y(M));ctx.stroke();ctx.setLineDash([]);
+}
+
+// ---------------- CSV export ----------------
+function downloadCSV(){const rows=['machine_id,shot,pump_pressure_bar,boiler_temp_c,shot_time_s,vibration_rms_mm_s,heat_recovery_s,fault_type,fault_severity,shots_to_failure'];
+  for(let i=0;i<60;i++){const m=fleetMachine(500000+i);
+    while(m.t<m.horizon&&!m.broken){const o=stepMachine(m);const s=severity(m);const active=m.fault&&m.t>=m.fault.onset;
+      rows.push([i,m.t,o.pressure.toFixed(3),o.temp.toFixed(2),o.shot.toFixed(2),o.vib.toFixed(3),o.recov.toFixed(2),active?m.fault.type:'none',s.toFixed(4),m.fault?failShot(m)-m.t:''].join(','));}}
+  const blob=new Blob([rows.join('\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='espresso_wear_sim.csv';a.click();
+  log(`Exported ${rows.length-1} shots from 60 simulated machines`);}
+
+// ---------------- Live demo ----------------
+let okStreak=0,LIVE=null,playing=false,acc=0,lastTs=0,streak=0,alarmOn=false,blindMode=false,machineSeed=4242,lastPred=null,votes=new Float64Array(5);
+const VIEW=400;
+function log(msg){const el=document.getElementById('log');const d=document.createElement('div');d.textContent=(LIVE?`[shot ${LIVE.t}] `:'')+msg;el.prepend(d);}
+function speedVal(){const v=+document.getElementById('speed').value;return Math.round(Math.pow(10,v/100*3));} // 1..1000 shots/s
+function newLive(){LIVE=newMachine(machineSeed++);for(let i=0;i<BASE_N+WIN+5;i++)stepMachine(LIVE);streak=0;alarmOn=false;blindMode=false;votes.fill(0);lastPred=null;
+  document.getElementById('log').innerHTML='';log('New machine installed, healthy baseline learned from first 40 shots');updateButtons();renderLive();}
+function updateButtons(){const busy=!!(LIVE.fault)||LIVE.broken;document.querySelectorAll('button.fault,#blind').forEach(b=>b.disabled=busy);}
+function liveCheck(){if(!MODEL.ready)return;const f=features(LIVE);if(!f)return;const pr=predict(f);lastPred=pr;
+  if(pr.p[0]<0.5){streak++;okStreak=0;for(let k=1;k<5;k++)votes[k]+=pr.p[k];}
+  else{streak=0;okStreak++;if(!alarmOn)votes.fill(0);if(alarmOn&&okStreak>=6){alarmOn=false;votes.fill(0);log('Model: back to healthy');}} // hysteresis so the alert doesn't flicker
+  if(streak>=CONSEC&&!alarmOn){alarmOn=true;const c=topFault();log(`⚠ ALERT: ${FAULTS[c].label} → ${FAULTS[c].action} within ~${roundRul(pr.rul)} shots`);}}
+function topFault(){let best=1;for(let k=2;k<5;k++)if(votes[k]>votes[best])best=k;return CLASSES[best];}
+function roundRul(r){return r<100?Math.max(10,Math.round(r/10)*10):Math.round(r/50)*50;}
+function tick(ts){const dt=Math.min(0.1,(ts-lastTs)/1000||0);lastTs=ts;
+  if(playing&&LIVE&&!LIVE.broken){acc+=dt*speedVal();let n=Math.floor(acc);acc-=n;n=Math.min(n,400);
+    for(let i=0;i<n;i++){stepMachine(LIVE);if(LIVE.t%CHECK_EVERY===0)liveCheck();
+      if(LIVE.broken){log(`✖ MACHINE FAILED: ${FAULTS[LIVE.fault.type].label}`+(alarmOn?'':' (no warning was raised)'));setPlaying(false);updateButtons();break;}}}
+  renderLive();requestAnimationFrame(tick);}
+function setPlaying(p){playing=p;document.getElementById('play').textContent=p?'⏸ Pause':'▶ Play';}
+
+function buildCharts(){document.getElementById('charts').innerHTML=SIG.map(s=>`<div class="chart"><div class="t"><span>${s.name}</span><b id="v-${s.k}"></b></div><canvas id="c-${s.k}"></canvas></div>`).join('');}
+function renderLive(){if(!LIVE)return;
+  const fcol=LIVE.fault?cssv(FAULTS[LIVE.fault.type].color):null;
+  for(const s of SIG){const c=document.getElementById('c-'+s.k);const {ctx,w,h}=setupCanvas(c);const hist=LIVE.hist[s.k];const n=hist.length;const a=hist.slice(Math.max(0,n-VIEW));
+    const bl=LIVE.bl[s.k];let lo=Math.min(bl.mu-4*bl.sd,...a),hi=Math.max(bl.mu+4*bl.sd,...a);const pad=(hi-lo)*0.05;lo-=pad;hi+=pad;
+    const X=i=>w*i/(VIEW-1),Y=v=>h-(h)*(v-lo)/(hi-lo);
+    ctx.fillStyle='rgba(139,151,165,0.15)';ctx.fillRect(0,Y(bl.mu+2*bl.sd),w,Y(bl.mu-2*bl.sd)-Y(bl.mu+2*bl.sd));
+    // fault onset marker
+    if(LIVE.fault&&!blindMode&&document.getElementById('showtruth').checked){const on=LIVE.fault.onset-(n-a.length);if(on>=0&&on<a.length){ctx.strokeStyle=fcol;ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(X(on),0);ctx.lineTo(X(on),h);ctx.stroke();ctx.setLineDash([]);}}
+    ctx.strokeStyle=alarmOn?cssv('--warn'):cssv('--accent');ctx.lineWidth=1.2;ctx.beginPath();a.forEach((v,i)=>{i?ctx.lineTo(X(i),Y(v)):ctx.moveTo(X(i),Y(v));});ctx.stroke();
+    // 10-shot moving average
+    ctx.strokeStyle=cssv('--text');ctx.lineWidth=1.6;ctx.beginPath();let first=true;for(let i=9;i<a.length;i++){let m=0;for(let j=i-9;j<=i;j++)m+=a[j];m/=10;first?(ctx.moveTo(X(i),Y(m)),first=false):ctx.lineTo(X(i),Y(m));}ctx.stroke();
+    ctx.fillStyle=cssv('--muted');ctx.font='10px system-ui';ctx.textAlign='left';ctx.fillText(hi.toFixed(s.d),2,10);ctx.fillText(lo.toFixed(s.d),2,h-3);
+    document.getElementById('v-'+s.k).textContent=`${hist[n-1].toFixed(s.d)} ${s.unit}`;}
+  // status
+  const st=document.getElementById('status');let cls='ok',big,small;
+  if(!MODEL.ready){big='Model training…';small='Live sim works now; verdicts start once training finishes (~10–30 s).';}
+  else if(LIVE.broken){cls='bad';big=`✖ Broken: ${FAULTS[LIVE.fault.type].label}`;small=alarmOn?'Model had warned in advance. Press Repair.':'Failed without warning. Press Repair.';}
+  else if(alarmOn&&lastPred){cls='warn';const c=topFault();const r=roundRul(lastPred.rul);big=`⚠ ${FAULTS[c].action} within ~${r} shots`;small=`Suspected: ${FAULTS[c].label} · ≈ ${(r/SHOTS_PER_DAY).toFixed(1)} days at ${SHOTS_PER_DAY} shots/day`;}
+  else{big='✓ Healthy';small=lastPred?`No failure expected within the next ${H} shots (p = ${lastPred.p[0].toFixed(2)})`:'Collecting data…';}
+  st.className=cls;st.innerHTML=`<div class="big">${big}</div><div class="small">${small}</div>`;
+  const p=lastPred?lastPred.p:[1,0,0,0,0];
+  document.getElementById('probs').innerHTML=CLASSES.map((c,i)=>{const lab=c==='healthy'?'No fault soon':FAULTS[c].label;const col=c==='healthy'?cssv('--c-healthy'):cssv(FAULTS[c].color);
+    return `<div class="prob"><span>${lab}</span><div class="bar"><div style="width:${(p[i]*100).toFixed(1)}%;background:${col}"></div></div><span style="text-align:right">${Math.round(p[i]*100)}%</span></div>`;}).join('');
+  // truth
+  const show=document.getElementById('showtruth').checked;const tr=document.getElementById('truth');const s=severity(LIVE);
+  tr.className='kv'+(show?'':' hidden');
+  tr.innerHTML=`<span>Shot #</span><span>${LIVE.t.toLocaleString()}</span>`+
+    `<span>True fault</span><span>${LIVE.fault?FAULTS[LIVE.fault.type].label:'none'}</span>`+
+    `<span>Wear severity</span><span>${(s*100).toFixed(0)}%</span>`+
+    `<span>True shots left</span><span>${LIVE.fault?Math.max(0,failShot(LIVE)-LIVE.t):'∞'}</span>`+
+    `<span>Model's estimate</span><span>${alarmOn&&lastPred?'~'+roundRul(lastPred.rul):'—'}</span>`;
+}
+
+// wiring
+buildCharts();newLive();
+document.getElementById('play').onclick=()=>setPlaying(!playing);
+const sv=()=>document.getElementById('speedv').textContent=speedVal()+' shots/s';sv();document.getElementById('speed').oninput=sv;
+document.querySelectorAll('button.fault').forEach(b=>b.onclick=()=>{injectFault(LIVE,b.dataset.f);log(`Injected fault: ${FAULTS[b.dataset.f].label} (lifetime ${LIVE.fault.life} shots, hidden from model)`);updateButtons();if(!playing)setPlaying(true);});
+document.getElementById('blind').onclick=()=>{const ts=Object.keys(FAULTS);injectFault(LIVE,ts[Math.floor(Math.random()*4)]);blindMode=true;document.getElementById('showtruth').checked=false;log('Injected a mystery fault (ground truth hidden; tick "show hidden state" to reveal)');updateButtons();if(!playing)setPlaying(true);};
+document.getElementById('repair').onclick=()=>{if(LIVE.fault)log(`Repaired: ${FAULTS[LIVE.fault.type].action}`);LIVE.fault=null;LIVE.broken=false;blindMode=false;streak=0;alarmOn=false;votes.fill(0);updateButtons();};
+document.getElementById('newm').onclick=()=>newLive();
+document.getElementById('showtruth').onchange=()=>{if(document.getElementById('showtruth').checked)blindMode=false;};
+document.getElementById('csv').onclick=downloadCSV;
+window.addEventListener('resize',()=>{drawLead();drawRul();});
+requestAnimationFrame(tick);
+trainAll().then(r=>{renderProof(r);log('Model ready');window.__EVAL=r;});
+</script>
+</body>
+</html>
