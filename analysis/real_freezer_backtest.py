@@ -45,7 +45,12 @@ def find_time(df):
     raise SystemExit('No datetime column found; columns: %s' % list(df.columns))
 
 
+EXACT = {'chamber': 'RTD', 'suction1': '1st Suc.', 'ihx': 'H.E.', 'evap': 'Evap. Out', 'sump2': '2nd Sump'}  # column names in the released Revco parquet files
+
+
 def map_columns(df):
+    if all(v in df.columns for v in EXACT.values()):
+        return dict(EXACT), ('State' if 'State' in df.columns else None)
     cols = {str(c): c for c in df.columns}
     low = {k.lower(): v for k, v in cols.items()}
     out = {}

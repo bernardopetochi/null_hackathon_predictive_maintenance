@@ -128,7 +128,7 @@ th{color:var(--muted);font-weight:600}
 
   <section class="panel full" id="reality">
     <h2>Reality check: calibrated and backtested against real machine data</h2>
-    <p class="note" style="font-size:13px;color:var(--text)"><b>A real labelled ULT freezer dataset exists</b>: 53 freezers at the Danish National Biobank, 1-minute chamber and refrigerant-loop temperatures, compressor state, 42 labelled fault events, refrigerant leaks most common (Huang et al., <i>Scientific Data</i> 10, 2023, doi:10.1038/s41597-023-02808-6). Its hosts (figshare, DTU GitLab) were blocked from our build environment, so <b>our freezer signals, fault types and fault ordering follow that paper, but fault sizes are still calibrated on a proxy</b>: a real hydraulic test rig (UCI dataset 447, ZeMA / Saarland University, 2015) with labelled pump-leakage and heat-exchanger faults. Next step: backtest on the biobank data.</p>
+    <p class="note" style="font-size:13px;color:var(--text)"><b>A real labelled ULT freezer dataset exists</b>: 53 freezers at the Danish National Biobank, 1-minute chamber and refrigerant-loop temperatures, compressor state, 42 labelled fault events, refrigerant leaks most common (Huang et al., <i>Scientific Data</i> 10, 2023, doi:10.1038/s41597-023-02808-6). Its hosts (figshare, DTU GitLab) were blocked from our build environment, so <b>our freezer signals, fault types and fault ordering follow that paper, but fault sizes are still calibrated on a proxy</b>: a real hydraulic test rig (UCI dataset 447, ZeMA / Saarland University, 2015) with labelled pump-leakage and heat-exchanger faults. <b>Update:</b> we then backtested on one real biobank freezer (806278, stage-1 refrigerant leak). The first model missed the early warning; after recalibrating the leak shape and sensor noise on that real data, it alarmed <b>20.8 days before the service date, ~18 days before a −70 °C alarm</b>, naming the fault correctly. That is in-sample (same freezer), with 6 false alarms in 26 fault-free 125-day stretches. See analysis/REAL_BACKTEST.md.</p>
     <div class="proofgrid">
       <div>
         <h2 style="margin-top:6px">1 · Same model code on the real rig</h2>
@@ -213,7 +213,7 @@ function newMachine(seed){
   const rng=makeRng(seed+SEED_OFF*1000003);
   return {rng,t:0,fault:null,broken:false,
     base:{chamber:-80+0.3*rng.gauss(),ontime:35+4*rng.gauss(),suction1:-20+1.5*rng.gauss(),ihx:-38+1.5*rng.gauss(),evap:-88+1*rng.gauss(),sump2:38+2*rng.gauss(),door:30+4*rng.gauss()},
-    noise:{chamber:0.3,ontime:2.5,suction1:0.8,ihx:0.8,evap:0.8,sump2:1.0,door:6},
+    noise:{chamber:0.05,ontime:2.3,suction1:0.37,ihx:0.19,evap:0.17,sump2:0.66,door:6}, // v4: hourly noise measured on real Revco 806278 (Jun 2021-Feb 2022)
     drift:{chamber:0,ontime:0,suction1:0,ihx:0,evap:0,sump2:0,door:0},
     hist:{chamber:[],ontime:[],suction1:[],ihx:[],evap:[],sump2:[],door:[]}, bl:null, water:0, age:6*rng(), brand:BRAND, phase:rng()*6.283, init:true};
 }
@@ -232,7 +232,9 @@ function stepMachine(m){
   // ice buildup raises compressor duty). SIZES (in sigma units) reuse the leakage effect sizes measured on the real
   // hydraulic rig (~1.5-3 sigma per sensor), because the freezer data itself was not reachable from our build environment.
   if(ty==='comp2'){eff.sump2=2*N.sump2*s;eff.evap=1.5*N.evap*s;eff.ontime=1.8*N.ontime*s;nm.chamber=1+1*s;eff.chamber=10*Math.pow(s,4);}
-  if(ty==='leak1'){eff.suction1=1.5*N.suction1*s;eff.ihx=2*N.ihx*s;eff.ontime=1.5*N.ontime*s;eff.evap=0.8*N.evap*s;eff.chamber=10*Math.pow(s,4);}
+  // v4: stage-1 leak shape measured on real freezer 806278 (leak reported 2022-04-19): 2nd-stage sump dips ~2 C first,
+  // then 1st-stage suction climbs ~37 C over ~3 weeks while the chamber holds; compressor on-time drifts slightly DOWN; chamber goes last.
+  if(ty==='leak1'){eff.suction1=37*Math.pow(s,1.5);eff.sump2=-2*Math.min(1,s*3)*(s<0.8?1:0.3);eff.ontime=-1.5*s;eff.ihx=4*Math.pow(s,4);eff.chamber=10*Math.pow(s,4);}
   if(ty==='comp1'){eff.ontime=1.8*N.ontime*s;eff.suction1=1.2*N.suction1*s;eff.ihx=1.0*N.ihx*s;nm.chamber=1+1.5*s;eff.chamber=10*Math.pow(s,5);}
   if(ty==='door'){eff.door=2*N.door*s;eff.ontime=1.2*N.ontime*s;nm.chamber=1+1*s;eff.chamber=10*Math.pow(s,3);}
   // Slow healthy ageing (paper: one freezer's on-time crept up over years): random +0..6 min over ~4 months
