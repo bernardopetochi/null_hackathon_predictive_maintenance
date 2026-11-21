@@ -10,9 +10,10 @@ Sensor mapping (from the parquet column names): chamber = `RTD`, 1st-stage sucti
 |---|---|---|---|---|---|---|
 | 806278 | stage-1 leak, 2022-04-19 | ~18 days before | yes | correct | 6/26 | **in-sample** (v4 calibrated on it) |
 | 806274 | stage-1 leak, 2017-03-07 | 2 h after | no | correct | 9/27 | out-of-sample |
+| 806019 | none (healthy, 2012–2023) | – | – | – | **16/32** (≥16 false alarms in ~11 years, ≈1.5 per freezer-year) | out-of-sample healthy |
 <!-- TALLY-END -->
 
-**Out-of-sample so far: 0 of 1 leak freezers warned early.** Including in-sample: 1 of 2.
+**Out-of-sample so far: 0 of 1 leak freezers warned early; on a real healthy freezer, 16 of 32 fault-free 125-day stretches had a false alarm.** Including in-sample: 1 of 2 leaks. The simulator's 0.4% false-alarm rate does **not** carry over to real freezers: the threshold was set on simulated healthy freezers, and real healthy behaviour (defrosts, setpoint changes, maintenance, slow drifts) is far noisier than our simulation. Setting the threshold on real healthy freezers is the next fix.
 
 ## What the real leak looked like (daily means)
 - ~18 Mar 2022: 2nd-stage sump dips from ~32 °C to ~30 °C.
