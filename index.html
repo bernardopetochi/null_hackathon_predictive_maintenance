@@ -244,9 +244,27 @@ h1,h2,.s-big,.fig .v,.hc-row b,.cmp-bar span,.why b,.step .n,h3.sub{font-family:
 .legend i.sq-alert{box-shadow:inset 0 0 0 1.5px var(--hot)}
 .legend i.sq-fail{background:var(--ink);box-shadow:none}
 .fleet-legend{padding:14px 6px 2px}
+body.locked{overflow:hidden}
+#intro{position:fixed;inset:0;z-index:100;background:var(--surface);transition:opacity .6s ease}
+#intro.out{opacity:0;pointer-events:none}
+#introFrost{position:absolute;inset:0;width:100%;height:100%}
+.intro-c{position:absolute;left:50%;bottom:7vh;transform:translateX(-50%);width:min(420px,calc(100% - 32px));text-align:center}
+.intro-t{font:400 26px/1.2 var(--serif);letter-spacing:-.02em;color:var(--ink);margin-bottom:18px}
+.intro-p{display:flex;justify-content:space-between;font-size:13.5px;color:var(--muted);margin-bottom:8px}
+.intro-bar{height:2px;background:var(--rule2);margin-bottom:22px}
+.intro-bar div{height:100%;width:0;background:var(--ink);transition:width .3s}
 </style>
 </head>
-<body>
+<body class="locked">
+<div id="intro" role="dialog" aria-modal="true" aria-label="The model is training">
+  <canvas id="introFrost" aria-hidden="true"></canvas>
+  <div class="intro-c">
+    <div class="intro-t">The model is training in your browser.</div>
+    <div class="intro-p"><span id="introMsg">Simulating 1,000 freezers</span><span id="introPct">0%</span></div>
+    <div class="intro-bar"><div id="introBar"></div></div>
+    <button class="btn" id="introSkip">Skip to the site</button>
+  </div>
+</div>
 <header class="top"><div class="bar-in">
   <a class="brand" href="#"><svg width="22" height="22" viewBox="-12 -12 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle r="10.5"/><path d="M0-6V6M-5.2-3 5.2 3M-5.2 3 5.2-3"/></svg>Rime</a>
   <nav><a href="#fleet-sec">Fleet</a><a href="#demo-sec">Demo</a><a href="#results">Results</a><a href="#method">Method</a></nav>
@@ -617,9 +635,9 @@ function cssv(n){return getComputedStyle(document.documentElement).getPropertyVa
 function loadPalette(){for(const k of ['ink','text','muted','faint','rule','rule2','band','hot'])C[k]=cssv('--'+k);}
 const T0=performance.now(),TRAIN={frac:0};
 // Replaces the original progress writer. Training messages are written here so the wording stays consistent.
+const progMsg=frac=>frac>=1?'Done':frac<0.3?'Simulating 1,000 freezers':frac<0.78?'Training the model':frac<0.8?'Setting the alarm level':'Testing on 400 new freezers';
 function setProg(frac){TRAIN.frac=frac;$('trainprog').firstElementChild.style.width=(frac*100)+'%';
-  $('trainmsg').textContent=frac>=1?`Model ready, trained in ${Math.round((performance.now()-T0)/1000)} s`
-    :frac<0.3?'Simulating 1,000 freezers':frac<0.78?'Training the model':frac<0.8?'Setting the alarm level':'Testing on 400 new freezers';}
+  $('trainmsg').textContent=frac>=1?`Model ready, trained in ${Math.round((performance.now()-T0)/1000)} s`:progMsg(frac);}
 const fmtLead=h=>h==null?'none':(h>=48?(h/24).toFixed(1)+' days':Math.round(h)+' h');
 function roundRul(r){return r<100?Math.max(10,Math.round(r/10)*10):Math.round(r/50)*50;}
 function setupCanvas(c){const dpr=window.devicePixelRatio||1;if(!c._w||SIZE_GEN!==c._g){c._w=c.clientWidth;c._h=c.clientHeight;c._g=SIZE_GEN;}const w=c._w,h=c._h;if(c.width!==w*dpr||c.height!==h*dpr){c.width=w*dpr;c.height=h*dpr;}
@@ -784,7 +802,8 @@ function renderLive(){if(!LIVE||!VIS.demo)return;const key=[LIVE.t,alarmOn,LIVE.
 
 // ---------------- Hero image: frost grown by diffusion-limited aggregation ----------------
 // Particles wander at random and freeze when they touch the crystal, the same way rime ice forms.
-function growFrost(){const c=$('frost');if(!c)return;const G=361,cx=180,cy=180,occ=new Int32Array(G*G).fill(-1),P=[],rng=makeRng(7);
+let CRYSTAL=null;
+function buildCrystal(){if(CRYSTAL)return CRYSTAL;const G=361,cx=180,cy=180,occ=new Int32Array(G*G).fill(-1),P=[],rng=makeRng(7);
   const add=(x,y,par)=>{occ[y*G+x]=P.length;P.push({x,y,par});};add(cx,cy,-1);let maxR=1;const N=9000;
   while(P.length<N&&maxR<172){const a=rng()*6.2832,lr=maxR+4,kr=maxR+24;let x=Math.round(cx+lr*Math.cos(a)),y=Math.round(cy+lr*Math.sin(a));
     for(let st=0;st<40000;st++){const d=Math.floor(rng()*4);if(d===0)x++;else if(d===1)x--;else if(d===2)y++;else y--;
@@ -792,16 +811,28 @@ function growFrost(){const c=$('frost');if(!c)return;const G=361,cx=180,cy=180,o
       const nb=occ[y*G+x+1]>=0?occ[y*G+x+1]:occ[y*G+x-1]>=0?occ[y*G+x-1]:occ[(y+1)*G+x]>=0?occ[(y+1)*G+x]:occ[(y-1)*G+x];
       if(nb>=0){add(x,y,nb);maxR=Math.max(maxR,Math.sqrt(r2));break;}}}
   const cnt=new Float64Array(P.length).fill(1);for(let i=P.length-1;i>0;i--)cnt[P[i].par]+=cnt[i];
-  let drawn=1,start=null;const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  function geom(){const w=c.clientWidth,h=c.clientHeight;const s=Math.min(w,h)*0.92/(2*maxR+4);return {w,h,s,ox:w*0.5-cx*s,oy:h*0.44-cy*s};}
+  return CRYSTAL={P,cnt,maxR,cx,cy};}
+// getK() returns how much of the crystal to show, 0 to 1. oy sets the vertical centre.
+function growFrost(id,getK,oy,size=0.92){const c=$(id);if(!c)return null;const {P,cnt,maxR,cx,cy}=buildCrystal();
+  let drawn=1,shown=0,stopped=false;const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function geom(){const w=c.clientWidth,h=c.clientHeight;const s=Math.min(w,h)*size/(2*maxR+4);return {w,h,s,ox:w*0.5-cx*s,oy:h*oy-cy*s};}
   function seg(ctx,g,i0,i1,pass){for(let i=Math.max(1,i0);i<i1;i++){const p=P[i];let q=P[p.par];for(let k=0;k<3&&q.par>=0;k++)q=P[q.par];const lw=(0.35+0.55*Math.log(cnt[i]))*g.s*0.55;
       ctx.lineWidth=pass?lw:lw+g.s*0.6;ctx.beginPath();ctx.moveTo(g.ox+q.x*g.s+(pass?0:.6),g.oy+q.y*g.s+(pass?0:1));ctx.lineTo(g.ox+p.x*g.s+(pass?0:.6),g.oy+p.y*g.s+(pass?0:1));ctx.stroke();}}
-  function paint(i0,i1,clear){const {ctx}=clear?setupCanvas(c):{ctx:c.getContext('2d')};const g=geom();ctx.lineCap='round';
+  function paint(i0,i1,clear){if(clear)c._w=0;const {ctx}=clear?setupCanvas(c):{ctx:c.getContext('2d')};const g=geom();ctx.lineCap='round';
     ctx.strokeStyle='rgba(120,128,140,0.38)';seg(ctx,g,i0,i1,0);ctx.strokeStyle='#ffffff';seg(ctx,g,i0,i1,1);}
-  function frame(ts){if(start===null)start=ts;const k=Math.min(1,(ts-start)/4200),e=1-Math.pow(1-k,3),target=Math.max(2,Math.floor(e*P.length));
-    paint(drawn,target,false);drawn=target;if(k<1)requestAnimationFrame(frame);}
-  setupCanvas(c);if(reduce){paint(1,P.length,true);drawn=P.length;}else requestAnimationFrame(frame);
-  window.addEventListener('resize',()=>{paint(1,drawn,true);});}
+  function frame(ts){if(stopped)return;const k=Math.min(1,getK(ts));shown+=(k-shown)*0.08;if(k>=1&&1-shown<0.002)shown=1;
+    const e=1-Math.pow(1-shown,3),target=Math.max(2,Math.floor(e*P.length));if(target>drawn){paint(drawn,target,false);drawn=target;}
+    if(drawn<P.length)requestAnimationFrame(frame);}
+  paint(1,1,true);if(reduce){paint(1,P.length,true);drawn=P.length;}else requestAnimationFrame(frame);
+  window.addEventListener('resize',()=>{if(c.clientWidth)paint(1,drawn,true);});
+  return {stop(){stopped=true;}};}
+
+// ---------------- Training intro ----------------
+let INTRO=null;
+function openIntro(){if(!$('intro'))return;INTRO=growFrost('introFrost',()=>TRAIN.frac,0.38,0.62);
+  (function upd(){if(!INTRO)return;$('introMsg').textContent=progMsg(TRAIN.frac);$('introPct').textContent=Math.round(TRAIN.frac*100)+'%';$('introBar').style.width=(TRAIN.frac*100)+'%';requestAnimationFrame(upd);})();}
+function closeIntro(){const el=$('intro');if(!el||el.classList.contains('out'))return;el.classList.add('out');document.body.classList.remove('locked');
+  setTimeout(()=>{el.remove();if(INTRO)INTRO.stop();INTRO=null;LIVE_KEY='';},650);}
 
 // ---------------- Fleet ----------------
 const FN=24,FSPEED=240;let FLEET=[],fleetSeed=6000000,fleetOn=true,fAcc=0,fleetHours=0;const FSTAT={fails:0,warned:0,leads:[],conv:[]};
@@ -839,7 +870,9 @@ function renderFleet(){if(!FLEET.length||!VIS.fleet)return;const now=performance
 initFleet();
 if('IntersectionObserver' in window){const io=new IntersectionObserver(es=>{for(const e of es){VIS[e.target.id==='demo'?'demo':'fleet']=e.isIntersecting;if(e.isIntersecting)LIVE_KEY='';}});io.observe($('demo'));io.observe(document.querySelector('.fleet'));}
 $('fleetPlay').onclick=()=>{fleetOn=!fleetOn;$('fleetPlay').textContent=fleetOn?'Pause':'Play';FLEET_LAST=0;};
-growFrost();
+{let st=null;growFrost('frost',ts=>{if(st===null)st=ts;return (ts-st)/2600;},0.44);}
+openIntro();
+$('introSkip').onclick=closeIntro;
 loadPalette();buildCharts();buildProbs();renderAxis(10);newLive();
 $('play').onclick=()=>setPlaying(!playing);
 document.querySelectorAll('#speedseg button').forEach(b=>b.onclick=()=>{SPEED=+b.dataset.v;document.querySelectorAll('#speedseg button').forEach(x=>x.classList.toggle('on',x===b));});
@@ -855,6 +888,7 @@ $('newm').onclick=()=>newLive();
 $('showtruth').onchange=()=>{if($('showtruth').checked)blindMode=false;};
 $('csv').onclick=downloadCSV;
 document.addEventListener('keydown',e=>{if(e.metaKey||e.ctrlKey||e.altKey||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;const k=e.key.toLowerCase();
+  if($('intro')&&!$('intro').classList.contains('out')){if(k==='escape'||k===' '||k==='enter'){e.preventDefault();closeIntro();}return;}
   if(k===' '){e.preventDefault();if(document.activeElement)document.activeElement.blur();setPlaying(!playing);}
   else if(k==='h')$('blind').click();else if(k==='r')repair();else if(k==='n')newLive();
   else if(k>='1'&&k<='4')document.querySelectorAll('button.fault[data-f]')[+k-1].click();});
@@ -862,7 +896,7 @@ const redrawStatic=()=>{drawLead();drawRul();drawReal();};
 window.addEventListener('resize',redrawStatic);
 if(document.fonts)document.fonts.ready.then(redrawStatic);
 requestAnimationFrame(tick);
-trainAll().then(async r=>{renderProof(r);$('trainbar').classList.add('ready');log('Model ready.');liveCheck();window.__EVAL=r;window.__REAL=await realBacktest();realNote();});
+trainAll().then(async r=>{setTimeout(closeIntro,700);renderProof(r);$('trainbar').classList.add('ready');log('Model ready.');liveCheck();window.__EVAL=r;window.__REAL=await realBacktest();realNote();});
 </script>
 </body>
 </html>
