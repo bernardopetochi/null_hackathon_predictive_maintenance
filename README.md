@@ -2,7 +2,7 @@
 
 **Predicting −80 °C lab freezer failures days ahead, trained on simulated freezers, checked against real data.**
 
-> **Real-data result:** on a real biobank freezer with a refrigerant leak, the recalibrated model warned **20.8 days before the service date (~18 days before a −70 °C alarm)**. In-sample, one freezer; details in [`analysis/REAL_BACKTEST.md`](analysis/REAL_BACKTEST.md).
+> **Real-data result:** on a real biobank freezer with a refrigerant leak, the recalibrated model warned **20.8 days before the service date (~18 days before a −70 °C alarm)**. In-sample, one freezer. **Out-of-sample on a second leak freezer (806274) it missed**: it alarmed 2 h after the −70 °C alarm, with the fault named correctly. Details in [`analysis/REAL_BACKTEST.md`](analysis/REAL_BACKTEST.md).
 NullHacks Helsinki, 21 Nov 2026. Theme: simulate data for physical AI.
 
 - **Live demo:** open [`index.html`](index.html) in a browser (no install, ~20 s to train in the page). Inject a fault, watch the model warn days before the freezer loses temperature.
@@ -28,7 +28,8 @@ NullHacks Helsinki, 21 Nov 2026. Theme: simulate data for physical AI.
 - We did that validation:
   - **Simulated freezers (5 seeds):** 100% of failures caught, median 8.1–8.8 days warning, compared with 1.0–1.2 days for a −70 °C alarm.
   - **Real biobank freezer 806278, refrigerant leak:** the first simulator-trained model **missed**. It alarmed 1.7 days before service, after a −70 °C alarm would have, because the real leak looked nothing like our guess. After recalibrating the leak shape and noise on that freezer, it warned **20.8 days** before service, about 18 days before the −70 °C alarm, with the fault named correctly. False alarms on fault-free stretches fell from 12/26 to 6/26.
-  - This is in-sample on one freezer, and the false alarm rate is still too high. The next step is out-of-sample freezers from the same dataset. Details: [`analysis/REAL_BACKTEST.md`](analysis/REAL_BACKTEST.md).
+  - **Out-of-sample, second leak freezer 806274 (model unchanged): missed.** The model alarmed 2 hours after the −70 °C alarm. It saw the suction trend (p(healthy) fell to ~0.6) but did not cross its threshold, because this leak built up more slowly than 806278. False alarms: 9/27 fault-free stretches.
+  - So on real data it is **1 of 2 leaks warned early, and that one is in-sample**. The approach detects the right signal, but it needs several real fault shapes and a threshold set on real healthy freezers before the numbers mean anything. Details: [`analysis/REAL_BACKTEST.md`](analysis/REAL_BACKTEST.md).
 
 ### Repo map
 | Path | What |
@@ -82,7 +83,8 @@ All on simulated freezers. Every alarm rule gets the same operating point: thres
 ### Real-data backtest (Revco freezer 806278, stage-1 leak) — see `analysis/REAL_BACKTEST.md`
 - **v3 simulator-trained model: missed the early warning.** It alarmed 1.7 days before the service date, after a plain −70 °C alarm would have. The real leak looked nothing like our guess: one sensor (1st-stage suction) climbed ~40 °C over 3 weeks while the chamber held at −79.7 °C.
 - **v4, after recalibrating the leak shape and sensor noise on that real data: alarm 20.8 days before the service date, ~18 days before the −70 °C alarm, fault named correctly.** False alarms on 26 fault-free 125-day stretches of the same freezer fell from 12 to 6.
-- This is in-sample (calibrated and tested on the same freezer) and 6/26 false alarms is still too high. Next: test on a second leak freezer (806274) and healthy freezers (806016, 806019).
+- This is in-sample (calibrated and tested on the same freezer) and 6/26 false alarms is still too high.
+- **Out-of-sample on 806274 (second stage-1 leak, model unchanged): missed.** It alarmed 2 h after the −70 °C alarm, with the fault named correctly and 9/27 false alarms. The leak built up more slowly (3 weeks) and the model stayed just above threshold. Next: train on several real leak shapes and set the threshold on real healthy freezers (806016, 806019).
 
 ### Real-data backtest tooling
 `analysis/real_freezer_backtest.py --dir <folder>` takes the biobank's `fault_summary.xlsx` and per-freezer `*_temp.parquet` files, rebuilds the same hourly signals (on-time from the compressor state bit), runs the simulator-trained model (`analysis/model.json`, exported by `analysis/export_model.js`), and reports: days of warning before each service date vs the −70 °C alarm, false alarms on fault-free 125-day stretches, and real noise / autocorrelation / fault sizes vs the simulator's assumptions. Tested only on fake data in the paper's format so far; column mapping follows the paper's Table 2 and is printed for checking.
