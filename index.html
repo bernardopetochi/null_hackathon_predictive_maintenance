@@ -349,17 +349,18 @@ h1,h2,.s-big,.fig .v,.hc-row b,.cmp-bar span,.why b,.step .n,h3.sub{font-family:
   <section class="block" id="method">
     <div class="kicker">Method</div>
     <h2>How we know it works.</h2>
-    <p class="lead">Real failures are rare, so we train on 1,000 simulated freezers built from data on 53 real ones. Then we check the method on a real machine.</p>
+    <p class="lead">Real failures are rare, so we train on 1,000 simulated freezers built from data on 53 real ones. Then we check it on real biobank freezers, and on a real hydraulic test rig.</p>
     <div class="rgrid">
       <div><canvas id="realchart" aria-label="Accuracy on real rig data"></canvas><p class="note" id="realnote"></p></div>
       <div>
         <table>
           <tr><th>Part</th><th>Source</th></tr>
           <tr><td>Sensors and fault types</td><td class="src">Real freezer data</td></tr>
-          <tr><td>Fault size in the sensors</td><td class="src">Real hydraulic rig</td></tr>
+          <tr><td>Fault size in the sensors</td><td class="src">Real hydraulic rig; leak shape and sensor noise from real freezer 806278</td></tr>
           <tr><td>How fast faults get worse</td><td class="src assumed">Assumed</td></tr>
-          <tr><td>Test results</td><td class="src">Simulated freezers only</td></tr>
+          <tr><td>Test results above</td><td class="src">Simulated freezers only</td></tr>
         </table>
+        <p class="note" style="margin-top:14px"><b>On real freezers (Danish National Biobank, model unchanged):</b> leak in freezer 806278 flagged 20.8 days before the service date, about 18 days before a −70 °C alarm, but that freezer was used to calibrate the model. A second leak (806274) was <b>missed</b>: the alert came 2 hours after the −70 °C alarm. A healthy freezer (806019) raised false alarms in 16 of 32 four-month periods. The simulated false-alarm rate does not carry over yet; the next step is setting the alarm level on real healthy freezers. Details in analysis/REAL_BACKTEST.md.</p>
       </div>
     </div>
   </section>
