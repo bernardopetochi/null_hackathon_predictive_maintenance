@@ -1,0 +1,5 @@
+real_data/
+*.parquet
+*.xlsx
+__pycache__/
+.DS_Store
