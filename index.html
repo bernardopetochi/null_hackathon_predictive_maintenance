@@ -244,25 +244,69 @@ h1,h2,.s-big,.fig .v,.hc-row b,.cmp-bar span,.why b,.step .n,h3.sub{font-family:
 .legend i.sq-alert{box-shadow:inset 0 0 0 1.5px var(--hot)}
 .legend i.sq-fail{background:var(--ink);box-shadow:none}
 .fleet-legend{padding:14px 6px 2px}
+body.landing main,body.landing footer,body.landing nav,body.landing #trainbar{display:none}
+body.app .hero{display:none}
+body.app section.block{display:none;padding-top:40px}
+body.app section.block.on{display:block}
+body.app .block h2{font-size:clamp(28px,2.6vw,38px);margin-bottom:28px}
+body.app .kicker{display:none}
+body.app footer{margin-top:72px}
+header.top{border-bottom:1px solid var(--rule)}
+nav{gap:6px}
+nav .tab{background:none;border:0;color:var(--muted);font:500 15px var(--sans);cursor:pointer;height:36px;padding:0 14px;border-radius:999px}
+nav .tab:hover{color:var(--ink)}
+nav .tab.on{background:var(--surface);color:var(--ink)}
+.hero-foot{grid-template-columns:1fr;gap:28px}
+.enter{display:grid;gap:0;max-width:430px}
+.enter .pill{justify-self:start;margin-top:22px;border:0;cursor:pointer}
+.intro-p{display:flex;justify-content:space-between;font-size:13.5px;color:var(--muted);margin-bottom:8px}
+.intro-bar{height:2px;background:var(--rule2)}
+.intro-bar div{height:100%;width:0;background:var(--ink)}
+/* Full-screen landing while the model trains */
+body.landing{overflow:hidden}
+body.landing header.top{display:none}
+body.landing .hero{position:fixed;inset:0;z-index:50;display:block;height:auto;max-height:none;min-height:0;background:var(--surface)}
+body.landing .hero-r{position:absolute;inset:0;background:transparent;border-radius:0;pointer-events:none}
+body.landing .hero-card{display:none}
+body.landing .hero-l{z-index:2;position:absolute;left:50%;bottom:6vh;transform:translateX(-50%);width:min(1000px,calc(100% - 32px));padding:0;display:block;text-align:center}
+body.landing .eyebrow{margin-bottom:14px}
+body.landing .hero h1{font-size:clamp(34px,4.2vw,62px);margin:0 0 14px}
+.land-result{font-size:16px;color:var(--muted);min-height:1.5em}
+body.app .land-result{display:none}
+body.landing .hero-foot{border:0;padding-top:26px;justify-items:center}
+body.landing .hero-foot p{display:none}
+body.landing .enter{width:min(420px,100%)}
+body.landing .enter .pill{justify-self:center}
+.brand-land{display:none}
+body.landing .brand-land{display:flex;position:fixed;top:22px;left:40px;z-index:60}
+@keyframes breathe{0%,100%{transform:scale(1) rotate(0deg)}50%{transform:scale(1.07) rotate(1.5deg)}}
+body.landing #frost{animation:breathe 5s ease-in-out infinite;transform-origin:50% 34%;will-change:transform}
+@media (prefers-reduced-motion:reduce){body.landing #frost{animation:none}}
 </style>
 </head>
-<body>
+<body class="landing">
+
 <header class="top"><div class="bar-in">
   <a class="brand" href="#"><svg width="22" height="22" viewBox="-12 -12 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle r="10.5"/><path d="M0-6V6M-5.2-3 5.2 3M-5.2 3 5.2-3"/></svg>Rime</a>
-  <nav><a href="#fleet-sec">Fleet</a><a href="#demo-sec">Demo</a><a href="#results">Results</a><a href="#method">Method</a></nav>
+  <nav role="tablist"><button class="tab on" data-tab="fleet-sec">Fleet</button><button class="tab" data-tab="demo-sec">Freezer</button><button class="tab" data-tab="results">Results</button><button class="tab" data-tab="method">Method</button></nav>
   <div id="trainbar"><span id="trainmsg">Starting</span><div id="trainprog"><div></div></div></div>
-  <a class="pill sm" href="#demo-sec">Try the demo <span class="arrow">&#8599;</span></a>
 </div></header>
 
+<a class="brand brand-land" href="#" aria-hidden="true"><svg width="22" height="22" viewBox="-12 -12 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle r="10.5"/><path d="M0-6V6M-5.2-3 5.2 3M-5.2 3 5.2-3"/></svg>Rime</a>
 <section class="hero">
   <div class="hero-l">
     <div>
       <div class="eyebrow">Predictive maintenance for lab freezers</div>
       <h1>Know days before a freezer fails.</h1>
+      <div class="land-result" id="landResult">The model is training in your browser.</div>
     </div>
     <div class="hero-foot">
       <p>Rime watches the cooling system of −80 °C freezers and flags faults before samples are at risk.</p>
-      <a class="pill" href="#demo-sec">Try the demo <span class="arrow">&#8599;</span></a>
+      <div class="enter">
+        <div class="intro-p"><span id="introMsg">Training the model in your browser</span><span id="introPct">0%</span></div>
+        <div class="intro-bar"><div id="introBar"></div></div>
+        <button class="pill" id="enterBtn"><span id="enterLbl">Training</span> <span class="arrow">&#8599;</span></button>
+      </div>
     </div>
   </div>
   <div class="hero-r">
@@ -512,7 +556,9 @@ function fleetMachine(seed,i){ // returns machine with a fault (80%) or healthy
   if(r()<0.8)injectFault(m,pickFault(r()),Math.round(r.range(250,1100)));
   m.horizon=m.fault?failShot(m):3000;return m;}
 
-const sleep0=()=>new Promise(r=>setTimeout(r,0));
+const _mc=new MessageChannel(),_mq=[];_mc.port1.onmessage=()=>{const f=_mq.shift();if(f)f();};
+const sleep0=()=>new Promise(r=>{_mq.push(r);_mc.port2.postMessage(0);});
+let _ly=0;const maybeYield=()=>{const t=performance.now();if(t-_ly<10)return null;_ly=t;return sleep0();};
 
 async function trainAll(){
   const t0=performance.now();
@@ -524,7 +570,7 @@ async function trainAll(){
         const lab=(m.fault&&rul<=H&&m.t>=m.fault.onset)?CLASSES.indexOf(m.fault.type):0;
         if(lab===0)healthyBank.push(f);else{Xc.push(f);Yc.push(lab);}
         if(m.fault&&m.t>=m.fault.onset&&rul<=600){Xr.push(f);Yr.push(Math.log1p(rul));}}}
-    if(i%10===0){setProg(0.3*i/NTRAIN,`Simulating training fleet: machine ${i}/${NTRAIN}`);await sleep0();}}
+    if(i%10===0)setProg(0.3*i/NTRAIN);const y=maybeYield();if(y)await y;}
   // balance: keep about as many healthy samples as fault samples
   const hr=makeRng(7);healthyBank.sort(()=>hr()-0.5);healthyBank=healthyBank.slice(0,Math.round(Xc.length*3));
   for(const f of healthyBank){Xc.push(f);Yc.push(0);}
@@ -539,9 +585,9 @@ async function trainAll(){
   let lc=0,lr=0;
   for(let ep=0;ep<EPOCHS;ep++){
     const oc=order(XcN.length);lc=0;let nb=0;
-    for(let b=0;b<oc.length;b+=BS){lc+=MODEL.cls.trainBatch(XcN,Yc,oc.slice(b,b+BS),'cls',0.003);nb++;if(nb%25===0)await sleep0();}lc/=nb;
+    for(let b=0;b<oc.length;b+=BS){lc+=MODEL.cls.trainBatch(XcN,Yc,oc.slice(b,b+BS),'cls',0.003);nb++;const y=maybeYield();if(y)await y;}lc/=nb;
     const orr=order(XrN.length);lr=0;nb=0;
-    for(let b=0;b<orr.length;b+=BS){lr+=MODEL.rul.trainBatch(XrN,Yr,orr.slice(b,b+BS),'reg',0.003);nb++;if(nb%25===0)await sleep0();}lr/=nb;
+    for(let b=0;b<orr.length;b+=BS){lr+=MODEL.rul.trainBatch(XrN,Yr,orr.slice(b,b+BS),'reg',0.003);nb++;const y=maybeYield();if(y)await y;}lr/=nb;
     setProg(0.3+0.5*(ep+1)/EPOCHS,`Training on ${Xc.length.toLocaleString()} windows · epoch ${ep+1}/${EPOCHS} · loss ${lc.toFixed(3)}`);await sleep0();}
   MODEL.ready=true;MODEL.nTrainMachines=NTRAIN;MODEL.nWindows=Xc.length;
   // 2) evaluate on unseen machines (different seeds)
@@ -559,7 +605,7 @@ async function calibrateThreshold(){const vals=[];
   for(let i=0;i<120;i++){const m=brandify(newMachine(700000+i));const q=[];let worst=1;
     while(m.t<3000){stepMachine(m);if(m.t%CHECK_EVERY)continue;const f=features(m);if(!f)continue;
       q.push(predict(f).p[0]);if(q.length>CONSEC)q.shift();if(q.length===CONSEC)worst=Math.min(worst,Math.max(...q));}
-    vals.push(worst);if(i%20===0){setProg(0.78,`Setting alarm threshold on 120 healthy validation machines: ${i}/120`);await sleep0();}}
+    vals.push(worst);if(i%20===0)setProg(0.78);const y=maybeYield();if(y)await y;}
   vals.sort((a,b)=>a-b);THR=Math.min(0.5,vals[Math.floor(vals.length*0.10)]);return THR;}
 async function evaluate(NTEST=400){
  const out={fail:[],healthy:[],rul:[],falseAlarms:0,healthyShots:0};
@@ -576,7 +622,7 @@ async function evaluate(NTEST=400){
     if(!m.fault){out.healthy.push({alarm:!!alarm});out.healthyShots+=m.t;}
     else{const early=alarm&&alarm.t<m.fault.onset;
       out.fail.push({conv:conv!=null?failShot2(m,conv):null,type:m.fault.type,lead:alarm&&!early?failShot(m)-alarm.t:null,correct:alarm&&!early?alarm.cls===m.fault.type:false,falseEarly:!!early});}
-    if(i%25===0){setProg(0.8+0.2*i/NTEST,`Testing on unseen machines: ${i}/${NTEST}`);await sleep0();}}
+    if(i%25===0)setProg(0.8+0.2*i/NTEST);const y=maybeYield();if(y)await y;}
   {const c=out.fail.filter(f=>f.conv!=null).map(f=>f.conv).sort((a,b)=>a-b);out.convMed=c.length?c[Math.floor(c.length/2)]:0;}
   return out;
 }
@@ -598,7 +644,7 @@ async function realBacktest(){const F=HYD.F,Y=HYD.y,n=F.length,nf=F[0].length;co
       const XN=X.map(x=>Float64Array.from(x,(v,j)=>(v-mu[j])/sd[j]));const yc=Y.map(y=>task.levels.indexOf(y[task.col]));
       const net=new MLP(d,32,task.levels.length,21);const trI=[...Array(n).keys()].filter(i=>!test[i]);const rr=makeRng(3);
       for(let ep=0;ep<60;ep++){for(let i=trI.length-1;i>0;i--){const j=Math.floor(rr()*(i+1));[trI[i],trI[j]]=[trI[j],trI[i]];}
-        for(let b=0;b<trI.length;b+=32)net.trainBatch(XN,yc,trI.slice(b,b+32),'cls',0.003);await sleep0();}
+        for(let b=0;b<trI.length;b+=32){net.trainBatch(XN,yc,trI.slice(b,b+32),'cls',0.003);const y=maybeYield();if(y)await y;}}
       let ok=0,nt=0;const cnt={};for(let i=0;i<n;i++)if(test[i]){nt++;const o=net.forward(XN[i]).o;let a=0;for(let k=1;k<o.length;k++)if(o[k]>o[a])a=k;if(a===yc[i])ok++;cnt[yc[i]]=(cnt[yc[i]]||0)+1;}
       r[lab]=ok/nt;r.chance=Math.max(...Object.values(cnt))/nt;r.nt=nt;}
     out.push(r);await sleep0();}
@@ -618,9 +664,9 @@ function cssv(n){return getComputedStyle(document.documentElement).getPropertyVa
 function loadPalette(){for(const k of ['ink','text','muted','faint','rule','rule2','band','hot'])C[k]=cssv('--'+k);}
 const T0=performance.now(),TRAIN={frac:0};
 // Replaces the original progress writer. Training messages are written here so the wording stays consistent.
+const progMsg=frac=>frac>=1?'Done':frac<0.3?'Simulating 1,000 freezers':frac<0.78?'Training the model':frac<0.8?'Setting the alarm level':'Testing on 400 new freezers';
 function setProg(frac){TRAIN.frac=frac;$('trainprog').firstElementChild.style.width=(frac*100)+'%';
-  $('trainmsg').textContent=frac>=1?`Model ready, trained in ${Math.round((performance.now()-T0)/1000)} s`
-    :frac<0.3?'Simulating 1,000 freezers':frac<0.78?'Training the model':frac<0.8?'Setting the alarm level':'Testing on 400 new freezers';}
+  $('trainmsg').textContent=frac>=1?`Model ready, trained in ${Math.round((performance.now()-T0)/1000)} s`:progMsg(frac);}
 const fmtLead=h=>h==null?'none':(h>=48?(h/24).toFixed(1)+' days':Math.round(h)+' h');
 function roundRul(r){return r<100?Math.max(10,Math.round(r/10)*10):Math.round(r/50)*50;}
 function setupCanvas(c){const dpr=window.devicePixelRatio||1;if(!c._w||SIZE_GEN!==c._g){c._w=c.clientWidth;c._h=c.clientHeight;c._g=SIZE_GEN;}const w=c._w,h=c._h;if(c.width!==w*dpr||c.height!==h*dpr){c.width=w*dpr;c.height=h*dpr;}
@@ -657,7 +703,7 @@ function renderProof(r){PROOF=r;
   $('tiles').innerHTML=figs.map(([v,l])=>`<div class="fig"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
   $('prooftxt').textContent='Simulated freezers. Measured live in your browser.';
   $('rulnote').textContent=`Predicted against true hours left. Typical error: ${Math.round(mae)} h.`;
-  $('hcRime').textContent=fmtLead(med);$('hcConv').textContent=fmtLead(conv);$('headline-result').textContent=`${fails.length+r.healthy.length} test freezers, simulated`;
+  $('hcRime').textContent=fmtLead(med);$('landResult').textContent=`Tested on 400 unseen freezers: Rime warned a median ${fmtLead(med)} before failure. The standard alarm, ${fmtLead(conv)}.`;$('hcConv').textContent=fmtLead(conv);$('headline-result').textContent=`${fails.length+r.healthy.length} test freezers, simulated`;
   renderCompare(med,conv);drawLead();drawRul();}
 function renderAxis(maxD){const step=maxD<=6?1:2;let s='';
   for(let d=0;d<=maxD;d+=step){s+=d?`<span style="left:${100*(1-d/maxD)}%">${d}</span>`:`<span class="end" style="left:100%">Failure</span>`;}
@@ -779,30 +825,46 @@ function renderTruth(){const show=$('showtruth').checked,tr=$('truth'),s=severit
     `<span>True time left</span><span>${LIVE.fault?fmtLead(Math.max(0,failShot(LIVE)-LIVE.t)):'No fault'}</span>`+
     `<span>Rime's estimate</span><span>${alarmOn&&lastPred&&!LIVE.broken?fmtLead(roundRul(lastPred.rul)):'None'}</span>`;
   if(tr._h!==html){tr._h=html;tr.innerHTML=html;}}
-let LIVE_KEY='';const VIS={demo:true,fleet:true};
+let LIVE_KEY='';const VIS={demo:false,fleet:false};
 function renderLive(){if(!LIVE||!VIS.demo)return;const key=[LIVE.t,alarmOn,LIVE.broken,convT,alertT,!!LIVE.fault,$('showtruth').checked,MODEL.ready,lastPred&&lastPred.p[0],Math.round(TRAIN.frac*100)].join('|');if(key===LIVE_KEY)return;LIVE_KEY=key;$('clock').textContent='Day '+day(LIVE.t);
   drawSignal(SIG[0],true);for(const s of MINI)drawSignal(s,false);renderStatus();renderProbs();renderTruth();}
 
 // ---------------- Hero image: frost grown by diffusion-limited aggregation ----------------
 // Particles wander at random and freeze when they touch the crystal, the same way rime ice forms.
-function growFrost(){const c=$('frost');if(!c)return;const G=361,cx=180,cy=180,occ=new Int32Array(G*G).fill(-1),P=[],rng=makeRng(7);
-  const add=(x,y,par)=>{occ[y*G+x]=P.length;P.push({x,y,par});};add(cx,cy,-1);let maxR=1;const N=9000;
-  while(P.length<N&&maxR<172){const a=rng()*6.2832,lr=maxR+4,kr=maxR+24;let x=Math.round(cx+lr*Math.cos(a)),y=Math.round(cy+lr*Math.sin(a));
+// The crystal is built once, in a background worker so the page does not freeze.
+let CRYSTAL=null;
+function crystalCore(){const mb=a=>function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};const rng=mb(7);
+  const G=361,cx=180,cy=180,N=9000,occ=new Int32Array(G*G).fill(-1),xs=new Int16Array(N),ys=new Int16Array(N),par=new Int32Array(N);let n=0,maxR=1;
+  const add=(x,y,p)=>{occ[y*G+x]=n;xs[n]=x;ys[n]=y;par[n]=p;n++;};add(cx,cy,-1);
+  while(n<N&&maxR<172){const a=rng()*6.2832,lr=maxR+4,kr=maxR+24;let x=Math.round(cx+lr*Math.cos(a)),y=Math.round(cy+lr*Math.sin(a));
     for(let st=0;st<40000;st++){const d=Math.floor(rng()*4);if(d===0)x++;else if(d===1)x--;else if(d===2)y++;else y--;
       const dx=x-cx,dy=y-cy,r2=dx*dx+dy*dy;if(r2>kr*kr||x<1||y<1||x>G-2||y>G-2)break;
       const nb=occ[y*G+x+1]>=0?occ[y*G+x+1]:occ[y*G+x-1]>=0?occ[y*G+x-1]:occ[(y+1)*G+x]>=0?occ[(y+1)*G+x]:occ[(y-1)*G+x];
       if(nb>=0){add(x,y,nb);maxR=Math.max(maxR,Math.sqrt(r2));break;}}}
-  const cnt=new Float64Array(P.length).fill(1);for(let i=P.length-1;i>0;i--)cnt[P[i].par]+=cnt[i];
-  let drawn=1,start=null;const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  function geom(){const w=c.clientWidth,h=c.clientHeight;const s=Math.min(w,h)*0.92/(2*maxR+4);return {w,h,s,ox:w*0.5-cx*s,oy:h*0.44-cy*s};}
-  function seg(ctx,g,i0,i1,pass){for(let i=Math.max(1,i0);i<i1;i++){const p=P[i];let q=P[p.par];for(let k=0;k<3&&q.par>=0;k++)q=P[q.par];const lw=(0.35+0.55*Math.log(cnt[i]))*g.s*0.55;
-      ctx.lineWidth=pass?lw:lw+g.s*0.6;ctx.beginPath();ctx.moveTo(g.ox+q.x*g.s+(pass?0:.6),g.oy+q.y*g.s+(pass?0:1));ctx.lineTo(g.ox+p.x*g.s+(pass?0:.6),g.oy+p.y*g.s+(pass?0:1));ctx.stroke();}}
-  function paint(i0,i1,clear){const {ctx}=clear?setupCanvas(c):{ctx:c.getContext('2d')};const g=geom();ctx.lineCap='round';
+  const cnt=new Float64Array(n).fill(1);for(let i=n-1;i>0;i--)cnt[par[i]]+=cnt[i];
+  return {n,xs:xs.slice(0,n),ys:ys.slice(0,n),par:par.slice(0,n),cnt,maxR,cx,cy};}
+function loadCrystal(){const local=()=>{if(!CRYSTAL)CRYSTAL=crystalCore();};
+  try{const w=new Worker(URL.createObjectURL(new Blob([crystalCore.toString()+';postMessage(crystalCore());'],{type:'text/javascript'})));
+    w.onmessage=e=>{CRYSTAL=e.data;w.terminate();};w.onerror=e=>{e.preventDefault();w.terminate();setTimeout(local,0);};}
+  catch(e){setTimeout(local,0);}}
+// getK() returns how much of the crystal to show, 0 to 1. oy sets the vertical centre.
+function growFrost(id,getK,oy,size=0.92){const c=$(id);if(!c)return null;
+  let drawn=1,shown=0,stopped=false,ready=false;const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function geom(){const w=c._w||c.clientWidth,h=c._h||c.clientHeight;const s=Math.min(w,h)*size/(2*CRYSTAL.maxR+4);return {w,h,s,ox:w*0.5-CRYSTAL.cx*s,oy:h*oy-CRYSTAL.cy*s};}
+  function seg(ctx,g,i0,i1,pass){const {xs,ys,par,cnt}=CRYSTAL,dx=pass?0:.6,dy=pass?0:1;
+    for(let i=Math.max(1,i0);i<i1;i++){let q=par[i];for(let k=0;k<3&&par[q]>=0;k++)q=par[q];const lw=(0.35+0.55*Math.log(cnt[i]))*g.s*0.55;
+      ctx.lineWidth=pass?lw:lw+g.s*0.6;ctx.beginPath();ctx.moveTo(g.ox+xs[q]*g.s+dx,g.oy+ys[q]*g.s+dy);ctx.lineTo(g.ox+xs[i]*g.s+dx,g.oy+ys[i]*g.s+dy);ctx.stroke();}}
+  function paint(i0,i1,clear){if(clear)c._w=0;const {ctx}=clear?setupCanvas(c):{ctx:c.getContext('2d')};const g=geom();ctx.lineCap='round';
     ctx.strokeStyle='rgba(120,128,140,0.38)';seg(ctx,g,i0,i1,0);ctx.strokeStyle='#ffffff';seg(ctx,g,i0,i1,1);}
-  function frame(ts){if(start===null)start=ts;const k=Math.min(1,(ts-start)/4200),e=1-Math.pow(1-k,3),target=Math.max(2,Math.floor(e*P.length));
-    paint(drawn,target,false);drawn=target;if(k<1)requestAnimationFrame(frame);}
-  setupCanvas(c);if(reduce){paint(1,P.length,true);drawn=P.length;}else requestAnimationFrame(frame);
-  window.addEventListener('resize',()=>{paint(1,drawn,true);});}
+  function frame(){if(stopped)return;if(!CRYSTAL){requestAnimationFrame(frame);return;}
+    if(!ready){ready=true;paint(1,1,true);if(reduce){paint(1,CRYSTAL.n,true);drawn=CRYSTAL.n;return;}}
+    const k=Math.min(1,getK());shown+=(k-shown)*0.08;if(k>=1&&1-shown<0.002)shown=1;
+    const e=1-Math.pow(1-shown,3),target=Math.min(drawn+350,Math.max(2,Math.floor(e*CRYSTAL.n)));  // at most 350 branches per frame
+    if(target>drawn){paint(drawn,target,false);drawn=target;}
+    if(drawn<CRYSTAL.n)requestAnimationFrame(frame);}
+  requestAnimationFrame(frame);
+  window.addEventListener('resize',()=>{if(CRYSTAL&&ready&&c.clientWidth)paint(1,drawn,true);});
+  return {stop(){stopped=true;}};}
 
 // ---------------- Fleet ----------------
 const FN=24,FSPEED=240;let FLEET=[],fleetSeed=6000000,fleetOn=true,fAcc=0,fleetHours=0;const FSTAT={fails:0,warned:0,leads:[],conv:[]};
@@ -838,9 +900,22 @@ function renderFleet(){if(!FLEET.length||!VIS.fleet)return;const now=performance
 
 // ---------------- Wiring ----------------
 initFleet();
-if('IntersectionObserver' in window){const io=new IntersectionObserver(es=>{for(const e of es){VIS[e.target.id==='demo'?'demo':'fleet']=e.isIntersecting;if(e.isIntersecting)LIVE_KEY='';}});io.observe($('demo'));io.observe(document.querySelector('.fleet'));}
 $('fleetPlay').onclick=()=>{fleetOn=!fleetOn;$('fleetPlay').textContent=fleetOn?'Pause':'Play';FLEET_LAST=0;};
-growFrost();
+loadCrystal();
+growFrost('frost',()=>TRAIN.frac,0.34,0.58);
+function landingLoop(){if(!document.body.classList.contains('landing'))return;const f=TRAIN.frac;
+  $('introMsg').textContent=MODEL.ready?'Model trained on 1,000 simulated freezers':progMsg(f);$('introPct').textContent=Math.round(f*100)+'%';$('introBar').style.width=(f*100)+'%';
+  $('enterLbl').textContent=MODEL.ready?'Enter the dashboard':'Enter now, training continues';requestAnimationFrame(landingLoop);}
+landingLoop();
+function showTab(id){document.querySelectorAll('section.block').forEach(sec=>sec.classList.toggle('on',sec.id===id));
+  document.querySelectorAll('nav .tab').forEach(b=>b.classList.toggle('on',b.dataset.tab===id));SIZE_GEN++;LIVE_KEY='';FLEET_LAST=0;
+  VIS.demo=id==='demo-sec';VIS.fleet=id==='fleet-sec';requestAnimationFrame(redrawStatic);window.scrollTo(0,0);}
+function enterApp(){if(!document.body.classList.contains('landing'))return;document.body.classList.remove('landing');document.body.classList.add('app');showTab('fleet-sec');}
+$('enterBtn').onclick=enterApp;
+function backToLanding(e){if(e)e.preventDefault();if(document.body.classList.contains('landing'))return;document.body.classList.remove('app');document.body.classList.add('landing');
+  VIS.demo=false;VIS.fleet=false;window.scrollTo(0,0);landingLoop();}
+document.querySelector('header.top .brand').onclick=backToLanding;
+document.querySelectorAll('nav .tab').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
 loadPalette();buildCharts();buildProbs();renderAxis(10);newLive();
 $('play').onclick=()=>setPlaying(!playing);
 document.querySelectorAll('#speedseg button').forEach(b=>b.onclick=()=>{SPEED=+b.dataset.v;document.querySelectorAll('#speedseg button').forEach(x=>x.classList.toggle('on',x===b));});
@@ -856,6 +931,8 @@ $('newm').onclick=()=>newLive();
 $('showtruth').onchange=()=>{if($('showtruth').checked)blindMode=false;};
 $('csv').onclick=downloadCSV;
 document.addEventListener('keydown',e=>{if(e.metaKey||e.ctrlKey||e.altKey||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;const k=e.key.toLowerCase();
+  if(document.body.classList.contains('landing')){if(k==='escape'||k===' '||k==='enter'){e.preventDefault();enterApp();}return;}
+  if(k===' '&&!VIS.demo)return;
   if(k===' '){e.preventDefault();if(document.activeElement)document.activeElement.blur();setPlaying(!playing);}
   else if(k==='h')$('blind').click();else if(k==='r')repair();else if(k==='n')newLive();
   else if(k>='1'&&k<='4')document.querySelectorAll('button.fault[data-f]')[+k-1].click();});
