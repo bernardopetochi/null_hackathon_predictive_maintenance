@@ -244,43 +244,66 @@ h1,h2,.s-big,.fig .v,.hc-row b,.cmp-bar span,.why b,.step .n,h3.sub{font-family:
 .legend i.sq-alert{box-shadow:inset 0 0 0 1.5px var(--hot)}
 .legend i.sq-fail{background:var(--ink);box-shadow:none}
 .fleet-legend{padding:14px 6px 2px}
-body.locked{overflow:hidden}
-#intro{position:fixed;inset:0;z-index:100;background:var(--surface);transition:opacity .6s ease}
-#intro.out{opacity:0;pointer-events:none}
-#introFrost{position:absolute;inset:0;width:100%;height:100%}
-.intro-c{position:absolute;left:50%;bottom:7vh;transform:translateX(-50%);width:min(420px,calc(100% - 32px));text-align:center}
-.intro-t{font:400 26px/1.2 var(--serif);letter-spacing:-.02em;color:var(--ink);margin-bottom:18px}
+body.landing main,body.landing footer,body.landing nav,body.landing #trainbar{display:none}
+body.app .hero{display:none}
+body.app section.block{display:none;padding-top:40px}
+body.app section.block.on{display:block}
+body.app .block h2{font-size:clamp(28px,2.6vw,38px);margin-bottom:28px}
+body.app .kicker{display:none}
+body.app footer{margin-top:72px}
+header.top{border-bottom:1px solid var(--rule)}
+nav{gap:6px}
+nav .tab{background:none;border:0;color:var(--muted);font:500 15px var(--sans);cursor:pointer;height:36px;padding:0 14px;border-radius:999px}
+nav .tab:hover{color:var(--ink)}
+nav .tab.on{background:var(--surface);color:var(--ink)}
+.hero-foot{grid-template-columns:1fr;gap:28px}
+.enter{display:grid;gap:0;max-width:430px}
+.enter .pill{justify-self:start;margin-top:22px;border:0;cursor:pointer}
 .intro-p{display:flex;justify-content:space-between;font-size:13.5px;color:var(--muted);margin-bottom:8px}
-.intro-bar{height:2px;background:var(--rule2);margin-bottom:22px}
+.intro-bar{height:2px;background:var(--rule2)}
 .intro-bar div{height:100%;width:0;background:var(--ink);transition:width .3s}
+/* Full-screen landing while the model trains */
+body.landing{overflow:hidden}
+body.landing header.top{display:none}
+body.landing .hero{position:fixed;inset:0;z-index:50;display:block;height:auto;max-height:none;min-height:0;background:var(--surface)}
+body.landing .hero-r{position:absolute;inset:0;background:transparent;border-radius:0}
+body.landing .hero-card{display:none}
+body.landing .hero-l{position:absolute;left:50%;bottom:6vh;transform:translateX(-50%);width:min(1000px,calc(100% - 32px));padding:0;display:block;text-align:center}
+body.landing .eyebrow{margin-bottom:14px}
+body.landing .hero h1{font-size:clamp(34px,4.2vw,62px);margin:0 0 14px}
+.land-result{font-size:16px;color:var(--muted);min-height:1.5em}
+body.app .land-result{display:none}
+body.landing .hero-foot{border:0;padding-top:26px;justify-items:center}
+body.landing .hero-foot p{display:none}
+body.landing .enter{width:min(420px,100%)}
+body.landing .enter .pill{justify-self:center}
+.brand-land{display:none}
+body.landing .brand-land{display:flex;position:fixed;top:22px;left:40px;z-index:60}
 </style>
 </head>
-<body class="locked">
-<div id="intro" role="dialog" aria-modal="true" aria-label="The model is training">
-  <canvas id="introFrost" aria-hidden="true"></canvas>
-  <div class="intro-c">
-    <div class="intro-t">The model is training in your browser.</div>
-    <div class="intro-p"><span id="introMsg">Simulating 1,000 freezers</span><span id="introPct">0%</span></div>
-    <div class="intro-bar"><div id="introBar"></div></div>
-    <button class="btn" id="introSkip">Skip to the site</button>
-  </div>
-</div>
+<body class="landing">
+
 <header class="top"><div class="bar-in">
   <a class="brand" href="#"><svg width="22" height="22" viewBox="-12 -12 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle r="10.5"/><path d="M0-6V6M-5.2-3 5.2 3M-5.2 3 5.2-3"/></svg>Rime</a>
-  <nav><a href="#fleet-sec">Fleet</a><a href="#demo-sec">Demo</a><a href="#results">Results</a><a href="#method">Method</a></nav>
+  <nav role="tablist"><button class="tab on" data-tab="fleet-sec">Fleet</button><button class="tab" data-tab="demo-sec">Freezer</button><button class="tab" data-tab="results">Results</button><button class="tab" data-tab="method">Method</button></nav>
   <div id="trainbar"><span id="trainmsg">Starting</span><div id="trainprog"><div></div></div></div>
-  <a class="pill sm" href="#demo-sec">Try the demo <span class="arrow">&#8599;</span></a>
 </div></header>
 
+<a class="brand brand-land" href="#" aria-hidden="true"><svg width="22" height="22" viewBox="-12 -12 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle r="10.5"/><path d="M0-6V6M-5.2-3 5.2 3M-5.2 3 5.2-3"/></svg>Rime</a>
 <section class="hero">
   <div class="hero-l">
     <div>
       <div class="eyebrow">Predictive maintenance for lab freezers</div>
       <h1>Know days before a freezer fails.</h1>
+      <div class="land-result" id="landResult">The model is training in your browser.</div>
     </div>
     <div class="hero-foot">
       <p>Rime watches the cooling system of −80 °C freezers and flags faults before samples are at risk.</p>
-      <a class="pill" href="#demo-sec">Try the demo <span class="arrow">&#8599;</span></a>
+      <div class="enter">
+        <div class="intro-p"><span id="introMsg">Training the model in your browser</span><span id="introPct">0%</span></div>
+        <div class="intro-bar"><div id="introBar"></div></div>
+        <button class="pill" id="enterBtn"><span id="enterLbl">Training</span> <span class="arrow">&#8599;</span></button>
+      </div>
     </div>
   </div>
   <div class="hero-r">
@@ -675,7 +698,7 @@ function renderProof(r){PROOF=r;
   $('tiles').innerHTML=figs.map(([v,l])=>`<div class="fig"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
   $('prooftxt').textContent='Simulated freezers. Measured live in your browser.';
   $('rulnote').textContent=`Predicted against true hours left. Typical error: ${Math.round(mae)} h.`;
-  $('hcRime').textContent=fmtLead(med);$('hcConv').textContent=fmtLead(conv);$('headline-result').textContent=`${fails.length+r.healthy.length} test freezers, simulated`;
+  $('hcRime').textContent=fmtLead(med);$('landResult').textContent=`Tested on 400 unseen freezers: Rime warned a median ${fmtLead(med)} before failure. The standard alarm, ${fmtLead(conv)}.`;$('hcConv').textContent=fmtLead(conv);$('headline-result').textContent=`${fails.length+r.healthy.length} test freezers, simulated`;
   renderCompare(med,conv);drawLead();drawRul();}
 function renderAxis(maxD){const step=maxD<=6?1:2;let s='';
   for(let d=0;d<=maxD;d+=step){s+=d?`<span style="left:${100*(1-d/maxD)}%">${d}</span>`:`<span class="end" style="left:100%">Failure</span>`;}
@@ -797,7 +820,7 @@ function renderTruth(){const show=$('showtruth').checked,tr=$('truth'),s=severit
     `<span>True time left</span><span>${LIVE.fault?fmtLead(Math.max(0,failShot(LIVE)-LIVE.t)):'No fault'}</span>`+
     `<span>Rime's estimate</span><span>${alarmOn&&lastPred&&!LIVE.broken?fmtLead(roundRul(lastPred.rul)):'None'}</span>`;
   if(tr._h!==html){tr._h=html;tr.innerHTML=html;}}
-let LIVE_KEY='';const VIS={demo:true,fleet:true};
+let LIVE_KEY='';const VIS={demo:false,fleet:false};
 function renderLive(){if(!LIVE||!VIS.demo)return;const key=[LIVE.t,alarmOn,LIVE.broken,convT,alertT,!!LIVE.fault,$('showtruth').checked,MODEL.ready,lastPred&&lastPred.p[0],Math.round(TRAIN.frac*100)].join('|');if(key===LIVE_KEY)return;LIVE_KEY=key;$('clock').textContent='Day '+day(LIVE.t);
   drawSignal(SIG[0],true);for(const s of MINI)drawSignal(s,false);renderStatus();renderProbs();renderTruth();}
 
@@ -827,13 +850,6 @@ function growFrost(id,getK,oy,size=0.92){const c=$(id);if(!c)return null;const {
   paint(1,1,true);if(reduce){paint(1,P.length,true);drawn=P.length;}else requestAnimationFrame(frame);
   window.addEventListener('resize',()=>{if(c.clientWidth)paint(1,drawn,true);});
   return {stop(){stopped=true;}};}
-
-// ---------------- Training intro ----------------
-let INTRO=null;
-function openIntro(){if(!$('intro'))return;INTRO=growFrost('introFrost',()=>TRAIN.frac,0.38,0.62);
-  (function upd(){if(!INTRO)return;$('introMsg').textContent=progMsg(TRAIN.frac);$('introPct').textContent=Math.round(TRAIN.frac*100)+'%';$('introBar').style.width=(TRAIN.frac*100)+'%';requestAnimationFrame(upd);})();}
-function closeIntro(){const el=$('intro');if(!el||el.classList.contains('out'))return;el.classList.add('out');document.body.classList.remove('locked');
-  setTimeout(()=>{el.remove();if(INTRO)INTRO.stop();INTRO=null;LIVE_KEY='';},650);}
 
 // ---------------- Fleet ----------------
 const FN=24,FSPEED=240;let FLEET=[],fleetSeed=6000000,fleetOn=true,fAcc=0,fleetHours=0;const FSTAT={fails:0,warned:0,leads:[],conv:[]};
@@ -869,11 +885,21 @@ function renderFleet(){if(!FLEET.length||!VIS.fleet)return;const now=performance
 
 // ---------------- Wiring ----------------
 initFleet();
-if('IntersectionObserver' in window){const io=new IntersectionObserver(es=>{for(const e of es){VIS[e.target.id==='demo'?'demo':'fleet']=e.isIntersecting;if(e.isIntersecting)LIVE_KEY='';}});io.observe($('demo'));io.observe(document.querySelector('.fleet'));}
 $('fleetPlay').onclick=()=>{fleetOn=!fleetOn;$('fleetPlay').textContent=fleetOn?'Pause':'Play';FLEET_LAST=0;};
-{let st=null;growFrost('frost',ts=>{if(st===null)st=ts;return (ts-st)/2600;},0.44);}
-openIntro();
-$('introSkip').onclick=closeIntro;
+growFrost('frost',()=>TRAIN.frac,0.34,0.58);
+function landingLoop(){if(!document.body.classList.contains('landing'))return;const f=TRAIN.frac;
+  $('introMsg').textContent=MODEL.ready?'Model trained on 1,000 simulated freezers':progMsg(f);$('introPct').textContent=Math.round(f*100)+'%';$('introBar').style.width=(f*100)+'%';
+  $('enterLbl').textContent=MODEL.ready?'Enter the dashboard':'Enter now, training continues';requestAnimationFrame(landingLoop);}
+landingLoop();
+function showTab(id){document.querySelectorAll('section.block').forEach(sec=>sec.classList.toggle('on',sec.id===id));
+  document.querySelectorAll('nav .tab').forEach(b=>b.classList.toggle('on',b.dataset.tab===id));SIZE_GEN++;LIVE_KEY='';FLEET_LAST=0;
+  VIS.demo=id==='demo-sec';VIS.fleet=id==='fleet-sec';requestAnimationFrame(redrawStatic);window.scrollTo(0,0);}
+function enterApp(){if(!document.body.classList.contains('landing'))return;document.body.classList.remove('landing');document.body.classList.add('app');showTab('fleet-sec');}
+$('enterBtn').onclick=enterApp;
+function backToLanding(e){if(e)e.preventDefault();if(document.body.classList.contains('landing'))return;document.body.classList.remove('app');document.body.classList.add('landing');
+  VIS.demo=false;VIS.fleet=false;window.scrollTo(0,0);landingLoop();}
+document.querySelector('header.top .brand').onclick=backToLanding;
+document.querySelectorAll('nav .tab').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
 loadPalette();buildCharts();buildProbs();renderAxis(10);newLive();
 $('play').onclick=()=>setPlaying(!playing);
 document.querySelectorAll('#speedseg button').forEach(b=>b.onclick=()=>{SPEED=+b.dataset.v;document.querySelectorAll('#speedseg button').forEach(x=>x.classList.toggle('on',x===b));});
@@ -889,7 +915,8 @@ $('newm').onclick=()=>newLive();
 $('showtruth').onchange=()=>{if($('showtruth').checked)blindMode=false;};
 $('csv').onclick=downloadCSV;
 document.addEventListener('keydown',e=>{if(e.metaKey||e.ctrlKey||e.altKey||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;const k=e.key.toLowerCase();
-  if($('intro')&&!$('intro').classList.contains('out')){if(k==='escape'||k===' '||k==='enter'){e.preventDefault();closeIntro();}return;}
+  if(document.body.classList.contains('landing')){if(k==='escape'||k===' '||k==='enter'){e.preventDefault();enterApp();}return;}
+  if(k===' '&&!VIS.demo)return;
   if(k===' '){e.preventDefault();if(document.activeElement)document.activeElement.blur();setPlaying(!playing);}
   else if(k==='h')$('blind').click();else if(k==='r')repair();else if(k==='n')newLive();
   else if(k>='1'&&k<='4')document.querySelectorAll('button.fault[data-f]')[+k-1].click();});
@@ -897,7 +924,7 @@ const redrawStatic=()=>{drawLead();drawRul();drawReal();};
 window.addEventListener('resize',redrawStatic);
 if(document.fonts)document.fonts.ready.then(redrawStatic);
 requestAnimationFrame(tick);
-trainAll().then(async r=>{setTimeout(closeIntro,700);renderProof(r);$('trainbar').classList.add('ready');log('Model ready.');liveCheck();window.__EVAL=r;window.__REAL=await realBacktest();realNote();});
+trainAll().then(async r=>{renderProof(r);$('trainbar').classList.add('ready');log('Model ready.');liveCheck();window.__EVAL=r;window.__REAL=await realBacktest();realNote();});
 </script>
 </body>
 </html>
