@@ -57,3 +57,22 @@ Check on the protocol: the default baseline window (starting 45 days before the 
 **Conclusion:** recalibrating on one leak (806278) did not carry over to a second, slower leak. The model saw the trend, but its threshold is tuned to the faster 806278 shape. Honest current status on real data: **1 early warning out of 2 leaks, and the one that worked is in-sample**. False alarms of 6–9 per ~26 fault-free stretches are too high. The next step is to train on several real leak shapes (variable onset speed) and calibrate the threshold on real healthy freezers, not only simulated ones.
 
 Reproduce: `python3 analysis/real_freezer_backtest.py --temp 806274_temp.parquet --faults fault_summary.xlsx`.
+
+---
+
+## Can a threshold set on real healthy freezers fix it? (18:05, 3 freezers)
+Same v4 model; only the alarm threshold on p(healthy) changes (6 consecutive checks, as before). Leak baseline starts 90 days before the service date (clean for both leaks). "Lead" = days before the chamber first passed −70 °C (negative = after).
+
+| Threshold | False alarms 806278 / 806274 / 806019 | Lead, 806278 leak | Lead, 806274 leak |
+|---|---|---|---|
+| 0.5 (current) | 7/27, 9/27, 16/32 | +18.3 d | −0.1 d |
+| 0.1 | 2/27, 2/27, 8/32 | −0.4 d | −0.3 d |
+| 0.01 | 2/27, 0/27, 4/32 | −1.0 d | −1.3 d |
+| 0.0001 | 0/27, 0/27, 0/32 | −2.9 d | missed |
+
+Leave-one-freezer-out (threshold tuned for ≤10% false alarms on the other two freezers' healthy stretches, tested on the third):
+- held-out 806278: 2/27 false alarms, leak flagged 1.0 day **after** the −70 °C alarm.
+- held-out 806274: 0/27 false alarms, leak flagged 1.3 days **after** the −70 °C alarm.
+- held-out 806019 (healthy): 11/32 false alarms.
+
+**Finding:** no threshold gives both early warning and few false alarms. The model's score on real healthy noise overlaps its score on the early leak, so the fix is not the threshold. The model itself must be retrained with real healthy variation and the real leak signature (1st-stage suction climbing for ~3 weeks while the chamber holds −80 °C) in its training data. That did not fit in the hackathon; the demo model is unchanged. Script: `analysis/real_threshold_sweep.py`.
