@@ -1,4 +1,4 @@
-# Freezer Watch
+# Rime
 
 **Predicting −80 °C lab freezer failures days ahead, trained on simulated freezers, checked against real data.**
 
@@ -36,7 +36,7 @@ NullHacks Helsinki, 21 Nov 2026. Theme: simulate data for physical AI.
 ### Repo map
 | Path | What |
 |---|---|
-| `index.html` | Freezer Watch: simulator, in-browser model training, live dashboard, proof charts |
+| `index.html` | Rime demo: simulator, in-browser model training, live dashboard, proof charts |
 | `coffee.html`, `coffee_v1_guesses.html` | Same engine on an espresso machine (calibrated v2, and the uncalibrated v1) |
 | `analysis/run_robust.js`, `robust_page.js` | Multi-seed, cross-brand, 1,000-healthy-freezer and baseline-rule evaluation (`node analysis/run_robust.js`, needs Playwright) |
 | `analysis/real_freezer_backtest.py` | Backtest of the simulator-trained model on the real Danish biobank freezer data (`model.json` = exported weights) |
